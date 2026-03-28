@@ -1,31 +1,28 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Menu,
-  ArrowRight,
-  BookOpen,
-  Calculator,
-  Globe,
-  FlaskConical,
-  Languages,
-  Landmark,
-  Leaf,
-  ScrollText,
-  Star,
-  Zap,
-  MessageCircle,
-  PlayCircle,
-  PenTool,
-  Lightbulb,
-  RotateCcw,
-  Sparkles,
+    ArrowRight,
+    BookOpen,
+    FlaskConical,
+    Globe,
+    Landmark,
+    Languages,
+    Leaf,
+    Lightbulb,
+    Menu,
+    PenTool,
+    PlayCircle,
+    RotateCcw,
+    ScrollText,
+    Star,
+    Zap
 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
-  getLevelOptions,
-  getSubjectsByLevel,
-  formatSubjectName,
+    formatSubjectName,
+    getLevelOptions,
+    getSubjectsByLevel,
 } from "../lib/curriculum";
 
 const accents = ["mint", "peach", "lavender", "primary", "sky", "sunshine"];
@@ -100,6 +97,7 @@ export default function DashboardPage() {
           <motion.button
             className="dash-ia-btn"
             type="button"
+            onClick={() => navigate("/prof-ai")}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08, duration: 0.3 }}
@@ -173,7 +171,11 @@ export default function DashboardPage() {
                 <h3 className="resume-card-title">Exercice 3 — Puissances</h3>
                 <p className="resume-card-meta">Mathematiques</p>
               </div>
-              <button className="card-action" type="button">
+              <button className="card-action" type="button" onClick={() =>
+                  navigate(`/exercises/${selectedLevel}/Mathematiques`, {
+                    state: { subjectName: "Mathematiques", level: selectedLevel },
+                  })
+                }>
                 Continuer <ArrowRight size={15} />
               </button>
             </motion.div>

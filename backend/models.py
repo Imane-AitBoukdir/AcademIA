@@ -34,6 +34,10 @@ class Session(BaseModel):
     student_id: str = ""
     language: str = "fr-FR"
     chapter: str = ""
+    mode: str = "general"          # course | exercise | mock_exam | general
+    level: str = ""                # e.g. "6eme_annee_primaire"
+    subject: str = ""              # e.g. "Mathematiques"
+    reference_pdfs: list[str] = [] # file_uris of auto-attached reference PDFs
     history: list[HistoryTurn] = []
     uploaded_files: list[UploadedFile] = []
     current_turn: int = 0

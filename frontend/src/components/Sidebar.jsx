@@ -1,24 +1,24 @@
-import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  BookOpen,
-  Dumbbell,
-  GraduationCap,
-  Settings,
-  LogOut,
-  Sparkles,
-  Bot,
-  UserCircle,
+    BookOpen,
+    Bot,
+    Dumbbell,
+    GraduationCap,
+    LayoutDashboard,
+    LogOut,
+    Settings,
+    Sparkles,
+    UserCircle,
 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const items = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: BookOpen, label: "Subjects", path: "/dashboard" },
-  { icon: Dumbbell, label: "Exercises", path: "/dashboard" },
-  { icon: GraduationCap, label: "Mock Exams", path: "/dashboard" },
-  { icon: Bot, label: "Prof IA", path: "/dashboard" },
-  { icon: UserCircle, label: "Profil", path: "/dashboard" },
-  { icon: Settings, label: "Settings", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", match: "exact" },
+  { icon: BookOpen, label: "Subjects", path: "/pick/courses", match: "/courses" },
+  { icon: Dumbbell, label: "Exercises", path: "/pick/exercises", match: "/exercises" },
+  { icon: GraduationCap, label: "Mock Exams", path: "/pick/mock-exams", match: "/mock-exams" },
+  { icon: Bot, label: "Prof IA", path: "/prof-ai", match: "/prof-ai" },
+  { icon: UserCircle, label: "Profil", path: "/profil", match: "/profil" },
+  { icon: Settings, label: "Settings", path: "/settings", match: "/settings" },
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -40,12 +40,9 @@ export default function Sidebar({ open, onClose }) {
         <nav className="sidebar-nav">
           {items.map((item) => {
             const Icon = item.icon;
-            const active =
-              item.label === "Dashboard"
-                ? location.pathname === "/dashboard"
-                : item.label === "Subjects"
-                  ? location.pathname.startsWith("/courses")
-                  : false;
+            const active = item.match === "exact"
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.match) || location.pathname === item.path;
             return (
               <Link
                 key={item.label}

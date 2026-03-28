@@ -101,13 +101,17 @@ class SessionManager:
 
     def get_or_create(self, session_id: Optional[str],
                       language: str = "fr-FR",
-                      chapter: str = "") -> Session:
+                      chapter: str = "",
+                      mode: str = "general",
+                      level: str = "",
+                      subject: str = "") -> Session:
         if session_id:
             session = self._store.get(session_id)
             if session:
                 return session
         # Create fresh session
-        session = Session(language=language, chapter=chapter)
+        session = Session(language=language, chapter=chapter,
+                          mode=mode, level=level, subject=subject)
         self._store.set(session)
         return session
 

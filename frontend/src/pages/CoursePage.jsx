@@ -1,18 +1,19 @@
+import { motion } from "framer-motion";
+import { ChevronRight, FileText, Menu, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronRight, FileText, Menu } from "lucide-react";
+import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
 import {
-  getChaptersForSubject,
-  formatSubjectName,
-  normalizeValue,
+    formatSubjectName,
+    getChaptersForSubject,
+    normalizeValue,
 } from "../lib/curriculum";
 
-function chapterContent(subject, chapter) {
-  return `In this chapter "${chapter}", the student explores the key concepts of ${formatSubjectName(
-    subject,
-  )}. The content is structured in three parts: progressive understanding, guided examples, and practice with short exercises. A final review section helps consolidate learning before assessment.`;
+function getPdfPath(level, subject, chapter) {
+  const s = normalizeValue(subject);
+  const c = normalizeValue(chapter);
+  return `/pdfs/${level}/${s}/${c}/course.pdf`;
 }
 
 export default function CoursePage() {
@@ -30,6 +31,9 @@ export default function CoursePage() {
   );
   const [selectedChapter, setSelectedChapter] = useState(chapters[0] || "");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const pdfPath = getPdfPath(level, rawSubject, selectedChapter);
 
   return (
     <div className="dashboard-layout">
@@ -48,6 +52,8 @@ export default function CoursePage() {
             <Link to="/dashboard">Dashboard</Link>
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
+            <ChevronRight size={14} />
+            <span>{selectedChapter}</span>
           </div>
           <p className="course-level-badge">{level.replaceAll("_", " ")}</p>
         </header>
@@ -56,39 +62,77 @@ export default function CoursePage() {
           <aside className="chapter-sidebar">
             <h2>Chapters</h2>
             <div className="chapter-list">
-              {chapters.map((chapter) => (
+              {chapters.map((ch) => (
                 <button
-                  key={`${normalizeValue(rawSubject)}-${chapter}`}
+                  key={`${normalizeValue(rawSubject)}-${ch}`}
                   type="button"
                   className={
-                    selectedChapter === chapter
+                    selectedChapter === ch
                       ? "chapter-item active"
                       : "chapter-item"
                   }
-                  onClick={() => setSelectedChapter(chapter)}
+                  onClick={() => {
+                    setSelectedChapter(ch);
+                    setChatOpen(false);
+                  }}
                 >
                   <FileText size={14} />
-                  <span>{chapter}</span>
+                  <span>{ch}</span>
                 </button>
               ))}
             </div>
           </aside>
 
-          <motion.section
-            className="chapter-content"
-            key={selectedChapter}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <h2>{selectedChapter}</h2>
-            <p>{chapterContent(rawSubject, selectedChapter)}</p>
-            <p className="text-secondary" style={{ marginTop: "1rem" }}>
-              Detailed lesson content, exercises, and assessments will be
-              displayed here once connected to the backend.
-            </p>
-          </motion.section>
+          <div className={chatOpen ? "split-view" : "chapter-content-wrapper"}>
+            <motion.section
+              className="chapter-content"
+              key={selectedChapter}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="pdf-viewer-area">
+                <iframe
+                  src={pdfPath}
+                  title={`Course: ${selectedChapter}`}
+                  className="pdf-iframe"
+                />
+                <div className="pdf-fallback">
+                  <FileText size={32} />
+                  <h3>{selectedChapter}</h3>
+                  <p>
+                    PDF not found. Place the course PDF at:
+                    <br />
+                    <code>{pdfPath}</code>
+                  </p>
+                </div>
+              </div>
+            </motion.section>
+
+            {chatOpen && (
+              <AIChatPanel
+                mode="course"
+                level={level}
+                subject={rawSubject}
+                chapter={selectedChapter}
+                referencePdfPath={pdfPath}
+                onClose={() => setChatOpen(false)}
+              />
+            )}
+          </div>
         </div>
+
+        {/* Floating AI button */}
+        {!chatOpen && (
+          <button
+            className="ai-fab"
+            onClick={() => setChatOpen(true)}
+            type="button"
+          >
+            <Sparkles size={22} />
+            <span className="ai-fab-label">Explain with AI</span>
+          </button>
+        )}
       </main>
     </div>
   );

@@ -34,18 +34,30 @@ app.add_middleware(
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(
-    message:    str            = Form(...),
-    voice:      bool           = Form(False),
-    language:   str            = Form("fr-FR"),
-    chapter:    str            = Form(""),
-    session_id: Optional[str]  = Form(None),
-    file:       Optional[UploadFile] = File(None),
+    message:       str            = Form(...),
+    voice:         bool           = Form(False),
+    language:      str            = Form("fr-FR"),
+    chapter:       str            = Form(""),
+    mode:          str            = Form("general"),
+    level:         str            = Form(""),
+    subject:       str            = Form(""),
+    session_id:    Optional[str]  = Form(None),
+    reference_pdf: Optional[UploadFile] = File(None),
+    file:          Optional[UploadFile] = File(None),
 ):
+    # Validate mode
+    valid_modes = {"course", "exercise", "mock_exam", "general"}
+    if mode not in valid_modes:
+        mode = "general"
+
     # ── 1. Restore or create session ─────────────────────────────────────────
     session = session_manager.get_or_create(
         session_id=session_id,
         language=language,
         chapter=chapter,
+        mode=mode,
+        level=level,
+        subject=subject,
     )
 
     # ── 2. Handle uploaded file (if any) ─────────────────────────────────────
@@ -78,6 +90,28 @@ async def chat_endpoint(
         )
         print(f"[chat] File uploaded → {file.filename} | {file_uri}")
 
+    # ── 2b. Handle reference PDF (course/exercise PDF auto-attached) ─────────
+    if reference_pdf and reference_pdf.filename:
+        # Only upload if not already in session
+        existing_names = session.get_file_names()
+        if reference_pdf.filename not in existing_names:
+            if reference_pdf.content_type in settings.ALLOWED_MIME_TYPES:
+                ref_bytes = await reference_pdf.read()
+                if len(ref_bytes) <= settings.MAX_FILE_SIZE_MB * 1024 * 1024:
+                    ref_uri, ref_desc = await gemini_service.upload_file(
+                        file_bytes=ref_bytes,
+                        filename=reference_pdf.filename,
+                        mime_type=reference_pdf.content_type,
+                    )
+                    session.add_file(
+                        file_uri=ref_uri,
+                        name=reference_pdf.filename,
+                        mime_type=reference_pdf.content_type,
+                        description=ref_desc,
+                    )
+                    session.reference_pdfs.append(ref_uri)
+                    print(f"[chat] Reference PDF uploaded → {reference_pdf.filename} | {ref_uri}")
+
     # ── 3. Verify existing session files are still alive (48h TTL) ───────────
     #       If a file expired, remove it from session so we don't send dead URIs
     live_files = []
@@ -108,6 +142,9 @@ async def chat_endpoint(
         chapter=chapter or session.chapter,
         summary=summary,
         files_context=files_context,
+        mode=mode or session.mode,
+        level=level or session.level,
+        subject=subject or session.subject,
     )
 
     contents = build_contents(session=session, user_message=message)
