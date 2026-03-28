@@ -1,0 +1,73 @@
+{
+  "primary_morocco": [
+    {
+      "level": "1ere_annee_primaire",
+      "subjects": [
+        "Mathematiques",
+        "Activite_scientifique",
+        "Arabe",
+        "Francais",
+        "Education_islamique",
+        "Education_artistique"
+      ]
+    },
+    {
+      "level": "2eme_annee_primaire",
+      "subjects": [
+        "Mathematiques",
+        "Activite_scientifique",
+        "Arabe",
+        "Francais",
+        "Education_islamique",
+        "Education_artistique"
+      ]
+    },
+    {
+      "level": "3eme_annee_primaire",
+      "subjects": [
+        "Mathematiques",
+        "Activite_scientifique",
+        "Arabe",
+        "Francais",
+        "Education_islamique",
+        "Education_artistique"
+      ]
+    },
+    {
+      "level": "4eme_annee_primaire",
+      "subjects": [
+        "Mathematiques",
+        "Activite_scientifique",
+        "Arabe",
+        "Francais",
+        "Histoire_Geographie",
+        "Education_islamique",
+        "Education_artistique"
+      ]
+    },
+    {
+      "level": "5eme_annee_primaire",
+      "subjects": [
+        "Mathematiques",
+        "Activite_scientifique",
+        "Arabe",
+        "Francais",
+        "Histoire_Geographie",
+        "Education_islamique",
+        "Education_artistique"
+      ]
+    },
+    {
+      "level": "6eme_annee_primaire",
+      "subjects": [
+        "Mathematiques",
+        "Activite_scientifique",
+        "Arabe",
+        "Francais",
+        "Histoire_Geographie",
+        "Education_islamique",
+        "Education_artistique"
+      ]
+    }
+  ]
+}

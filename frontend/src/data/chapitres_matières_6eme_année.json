@@ -1,0 +1,66 @@
+{
+  "level": "6eme_annee_primaire",
+  "subjects": {
+    "mathematiques": [
+      "Nombres entiers et décimaux",
+      "Opérations sur les nombres décimaux",
+      "Nombres en écriture fractionnaire",
+      "Proportionnalité",
+      "Organisation et représentation de données (tableaux et graphiques)",
+      "Règle, équerre et compas",
+      "Figures planes (milieu, cercle, médiatrice d’un segment)",
+      "Les angles",
+      "Symétrie axiale",
+      "Figures usuelles (triangles et quadrilatères)",
+      "Périmètres et aires",
+      "Géométrie dans l’espace (parallélépipède rectangle et volumes)"
+    ],
+
+    "francais": [
+      "La phrase nominale et la phrase verbale",
+      "L’adjectif qualificatif",
+      "Le présent des verbes usuels",
+      "L’imparfait des verbes usuels",
+      "Lecture et compréhension de textes",
+      "Production écrite",
+      "Orthographe grammaticale"
+    ],
+
+    "arabe": [
+      "النص القرائي",
+      "التراكيب",
+      "الصرف والتحويل",
+      "الإملاء",
+      "التعبير الكتابي"
+    ],
+
+    "sciences_et_technologie": [
+      "Le corps humain et la santé",
+      "Les êtres vivants et leur environnement",
+      "La matière et ses transformations",
+      "L’énergie",
+      "Les objets techniques"
+    ],
+
+    "histoire_geographie": [
+      "Les civilisations anciennes",
+      "Le Maroc dans son environnement géographique",
+      "Les ressources naturelles",
+      "Population et activités humaines"
+    ],
+
+    "education_islamique": [
+      "القرآن الكريم",
+      "العقيدة",
+      "الاقتداء",
+      "الاستجابة",
+      "القسط"
+    ],
+
+    "education_artistique": [
+      "Dessin et expression artistique",
+      "Couleurs et formes",
+      "Création artistique"
+    ]
+  }
+}
