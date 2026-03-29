@@ -35,13 +35,45 @@ async def list_chapter_pdfs(
         "metadata.semester": semester,
         "metadata.chapter": chapter,
     }
-    cursor = db["pdfs.files"].find(query, {"_id": 1, "filename": 1, "uploadDate": 1})
+    cursor = db["pdfs.files"].find(query, {"_id": 1, "filename": 1, "uploadDate": 1, "metadata": 1})
     results = []
     async for doc in cursor:
+        meta = doc.get("metadata", {})
         results.append({
             "id": str(doc["_id"]),
             "filename": doc["filename"],
             "uploadDate": doc["uploadDate"].isoformat(),
+            "uploadedBy": meta.get("uploaded_by", ""),
+        })
+    return results
+
+
+async def list_subject_pdfs(
+    pdf_type: str,
+    specialty: str,
+    subject: str,
+) -> list[dict]:
+    """Return all PDF file entries for a subject across all semesters/chapters."""
+    db = database.get_db()
+    query = {
+        "metadata.pdf_type": pdf_type,
+        "metadata.specialty": specialty,
+        "metadata.subject": subject,
+    }
+    cursor = db["pdfs.files"].find(
+        query,
+        {"_id": 1, "filename": 1, "uploadDate": 1, "metadata": 1},
+    )
+    results = []
+    async for doc in cursor:
+        meta = doc.get("metadata", {})
+        results.append({
+            "id": str(doc["_id"]),
+            "filename": doc["filename"],
+            "uploadDate": doc["uploadDate"].isoformat(),
+            "chapter": meta.get("chapter", ""),
+            "semester": meta.get("semester", ""),
+            "uploadedBy": meta.get("uploaded_by", ""),
         })
     return results
 
@@ -70,6 +102,7 @@ async def store_pdf(
     subject: str,
     semester: str,
     chapter: str,
+    uploaded_by: str = "",
 ) -> str:
     """Upload bytes into GridFS. Returns the new file_id as a string."""
     safe_name = sanitize_filename(original_filename)
@@ -83,6 +116,23 @@ async def store_pdf(
             "subject": subject,
             "semester": semester,
             "chapter": chapter,
+            "uploaded_by": uploaded_by,
         },
     )
     return str(file_id)
+
+
+async def delete_pdf(file_id: str) -> None:
+    """Delete a file from GridFS by its ObjectId string."""
+    try:
+        oid = ObjectId(file_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file ID.")
+
+    db = database.get_db()
+    doc = await db["pdfs.files"].find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    gridfs = database.get_gridfs()
+    await gridfs.delete(oid)

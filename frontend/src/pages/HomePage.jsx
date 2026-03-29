@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, PenTool, Home, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronRight, Home, PenTool } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const fadeUp = {
   initial: { opacity: 0, y: 18 },
@@ -10,53 +10,53 @@ const fadeUp = {
 
 const features = [
   {
-    title: "Moroccan Curriculum",
-    desc: "Complete lessons aligned with the official Moroccan education program, from primary to middle school.",
+    title: "Programme Marocain",
+    desc: "Des cours complets alignés avec le programme officiel de l'éducation marocaine, du primaire au collège.",
     accent: "mint",
     icon: <BookOpen size={20} />,
   },
   {
-    title: "Interactive Exercises",
-    desc: "Practice with exercises designed for each chapter, with instant feedback to help you improve.",
+    title: "Exercices Interactifs",
+    desc: "Entraînez-vous avec des exercices conçus pour chaque chapitre, avec un retour instantané.",
     accent: "peach",
     icon: <PenTool size={20} />,
   },
   {
-    title: "AI Tutor",
-    desc: "A personal tutor that explains lessons, answers questions, and helps with homework in Arabic or French.",
+    title: "Tuteur IA",
+    desc: "Un tuteur personnel qui explique les cours, répond aux questions et aide aux devoirs en arabe ou en français.",
     accent: "lavender",
     icon: <ChevronRight size={20} />,
   },
   {
-    title: "Learn Anywhere",
-    desc: "Access your classroom from any device, whether at home, in a shelter, or on the go.",
+    title: "Apprenez Partout",
+    desc: "Accédez à votre classe depuis n'importe quel appareil, que ce soit à la maison ou en déplacement.",
     accent: "primary",
     icon: <Home size={20} />,
   },
 ];
 
 const steps = [
-  { num: "01", title: "Create your account", desc: "Simple registration with your school level and basic info." },
-  { num: "02", title: "Choose your subject", desc: "Browse your curriculum and pick the chapter you need." },
-  { num: "03", title: "Learn with AI", desc: "Study the lesson, practice exercises, and ask the tutor for help." },
+  { num: "01", title: "Créez votre compte", desc: "Inscription simple avec votre niveau scolaire et vos informations." },
+  { num: "02", title: "Choisissez votre matière", desc: "Parcourez votre programme et choisissez le chapitre souhaité." },
+  { num: "03", title: "Apprenez avec l'IA", desc: "Étudiez le cours, pratiquez les exercices et demandez l'aide du tuteur." },
 ];
 
 const heroCards = [
   {
-    title: "Bilingual lessons",
-    desc: "Move between Arabic and French learning support with ease.",
+    title: "Cours bilingues",
+    desc: "Passez facilement entre l'arabe et le français.",
     className: "hero-card hero-card-purple",
     icon: <BookOpen size={18} />,
   },
   {
-    title: "Interactive exercises",
-    desc: "Practice chapter by chapter with instant feedback.",
+    title: "Exercices interactifs",
+    desc: "Entraînez-vous chapitre par chapitre avec un retour instantané.",
     className: "hero-card hero-card-gold",
     icon: <PenTool size={18} />,
   },
   {
-    title: "Study from anywhere",
-    desc: "Keep learning at home, on the move, or during distance learning.",
+    title: "Étudiez partout",
+    desc: "Continuez à apprendre à la maison, en déplacement, ou à distance.",
     className: "hero-card hero-card-mint",
     icon: <Home size={18} />,
   },
@@ -69,25 +69,25 @@ export default function HomePage() {
         <div className="container">
           <div className="hero-grid">
             <motion.div className="hero-copy" {...fadeUp}>
-              <p className="hero-kicker">Morocco • Students • Joyful Learning</p>
+              <p className="hero-kicker">Maroc • Élèves • Apprendre avec plaisir</p>
               <h1>
-                A brighter way to <span className="hero-accent hero-accent-pink">study,</span>{" "}
-                <span className="hero-accent hero-accent-purple">grow,</span>
+                Une meilleure façon d'<span className="hero-accent hero-accent-pink">étudier,</span>{" "}
+                <span className="hero-accent hero-accent-purple">grandir,</span>
                 <br />
-                and <span className="hero-accent hero-accent-orange">stay excited about school.</span>
+                et <span className="hero-accent hero-accent-orange">rester motivé à l'école.</span>
               </h1>
               <p className="hero-sub">
-                AcademIA gives Moroccan students a warm, inspiring learning space
-                with lessons, exercises, and an AI tutor designed for real school life.
+                AcademIA offre aux élèves marocains un espace d'apprentissage chaleureux et inspirant
+                avec des cours, exercices et un tuteur IA conçu pour la vie scolaire réelle.
               </p>
               <div className="hero-actions">
-                <Link to="/signup" className="btn btn-primary">Start Learning</Link>
-                <a href="#features" className="btn btn-outline">Explore Subjects</a>
+                <Link to="/signup" className="btn btn-primary">Commencer</Link>
+                <a href="#features" className="btn btn-outline">Explorer les matières</a>
               </div>
               <div className="hero-chips">
-                <span className="hero-chip">Primary to middle school</span>
-                <span className="hero-chip">Arabic and French support</span>
-                <span className="hero-chip">Friendly AI tutor</span>
+                <span className="hero-chip">Du primaire au collège</span>
+                <span className="hero-chip">Support arabe et français</span>
+                <span className="hero-chip">Tuteur IA bienveillant</span>
               </div>
             </motion.div>
 
@@ -99,9 +99,9 @@ export default function HomePage() {
             >
               <div className="hero-stage-board" />
               <div className="hero-stage-title">
-                <span>Learn</span>
-                <span>Dream</span>
-                <span>Grow</span>
+                <span>Apprendre</span>
+                <span>Rêver</span>
+                <span>Grandir</span>
               </div>
               {heroCards.map((card, index) => (
                 <div key={card.title} className={`${card.className} hero-card-${index + 1}`}>
@@ -120,8 +120,8 @@ export default function HomePage() {
       <section id="features" className="section section-alt">
         <div className="container">
           <div className="section-header">
-            <p className="section-label">Features</p>
-            <h2>Everything a student needs to succeed</h2>
+            <p className="section-label">Fonctionnalités</p>
+            <h2>Tout ce dont un élève a besoin pour réussir</h2>
           </div>
           <div className="features-grid">
             {features.map((f, i) => (
@@ -145,8 +145,8 @@ export default function HomePage() {
       <section id="how-it-works" className="section">
         <div className="container">
           <div className="section-header">
-            <p className="section-label">How it works</p>
-            <h2>Start learning in three simple steps</h2>
+            <p className="section-label">Comment ça marche</p>
+            <h2>Commencez à apprendre en trois étapes simples</h2>
           </div>
           <div className="steps-grid">
             {steps.map((s, i) => (
@@ -171,34 +171,34 @@ export default function HomePage() {
         <div className="container">
           <div className="ai-tutor-block">
             <div className="ai-tutor-text">
-              <p className="section-label">AI Tutor</p>
-              <h2>Your personal learning assistant</h2>
+              <p className="section-label">Tuteur IA</p>
+              <h2>Votre assistant d'apprentissage personnel</h2>
               <p>
-                The AI tutor understands your curriculum and speaks your
-                language. It can:
+                Le tuteur IA comprend votre programme et parle votre
+                langue. Il peut :
               </p>
               <ul className="ai-tutor-list">
-                <li>Explain any lesson step by step</li>
-                <li>Answer questions in Arabic or French</li>
-                <li>Help with homework from photos or documents</li>
-                <li>Quiz you to prepare for exams</li>
+                <li>Expliquer n'importe quel cours étape par étape</li>
+                <li>Répondre aux questions en arabe ou en français</li>
+                <li>Aider avec les devoirs à partir de photos ou documents</li>
+                <li>Vous interroger pour préparer les examens</li>
               </ul>
-              <Link to="/signup" className="btn btn-primary">Try it now</Link>
+              <Link to="/signup" className="btn btn-primary">Essayer maintenant</Link>
             </div>
             <div className="ai-tutor-preview">
               <div className="chat-preview">
                 <div className="chat-bubble chat-ai">
                   <p>
-                    Hello. I am your AI tutor. What would you like to learn today?
+                    Bonjour. Je suis votre tuteur IA. Qu'aimeriez-vous apprendre aujourd'hui ?
                   </p>
                 </div>
                 <div className="chat-bubble chat-user">
-                  <p>Can you explain proportionality to me?</p>
+                  <p>Tu peux m'expliquer la proportionnalité ?</p>
                 </div>
                 <div className="chat-bubble chat-ai">
                   <p>
-                    Of course. Proportionality means that two quantities change
-                    at the same rate, so when one doubles, the other doubles too...
+                    Bien sûr. La proportionnalité signifie que deux grandeurs varient
+                    au même rythme, donc quand l'une double, l'autre double aussi...
                   </p>
                 </div>
               </div>
@@ -211,7 +211,7 @@ export default function HomePage() {
         <div className="container footer-inner">
           <p className="footer-logo">AcademIA</p>
           <p className="footer-copy">
-            Accessible education for every Moroccan student.
+            Une éducation accessible pour chaque élève marocain.
           </p>
         </div>
       </footer>

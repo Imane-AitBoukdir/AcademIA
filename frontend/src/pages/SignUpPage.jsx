@@ -43,14 +43,14 @@ export default function SignUpPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.detail || "Signup failed.");
+        setError(data.detail || "L'inscription a échoué.");
         return;
       }
       const user = await res.json();
       localStorage.setItem("academiaUser", JSON.stringify(user));
       navigate("/dashboard");
     } catch {
-      setError("Cannot reach server. Please try again.");
+      setError("Impossible de joindre le serveur. Veuillez réessayer.");
     }
   };
 
@@ -64,14 +64,14 @@ export default function SignUpPage() {
         transition={{ duration: 0.4 }}
       >
         <div className="auth-header">
-          <h1>Create your account</h1>
-          <p>Start learning with AcademIA today.</p>
+          <h1>Créez votre compte</h1>
+          <p>Commencez à apprendre avec AcademIA dès aujourd'hui.</p>
           {error && <p style={{ color: "#e53e3e", marginTop: 8 }}>{error}</p>}
         </div>
 
         <div className="form-grid form-two-cols">
           <div className="form-group">
-            <label className="form-label" htmlFor="prenom">First name</label>
+            <label className="form-label" htmlFor="prenom">Prénom</label>
             <input
               id="prenom"
               className="form-input"
@@ -84,7 +84,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="nom">Last name</label>
+            <label className="form-label" htmlFor="nom">Nom</label>
             <input
               id="nom"
               className="form-input"
@@ -97,7 +97,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="niveauScolaire">School level</label>
+            <label className="form-label" htmlFor="niveauScolaire">Niveau scolaire</label>
             <select
               id="niveauScolaire"
               className="form-input"
@@ -114,7 +114,7 @@ export default function SignUpPage() {
 
           {form.niveauScolaire === "lycee" && (
             <div className="form-group">
-              <label className="form-label" htmlFor="specialty">Stream / Filière</label>
+              <label className="form-label" htmlFor="specialty">Filière</label>
               <select
                 id="specialty"
                 className="form-input"
@@ -123,7 +123,7 @@ export default function SignUpPage() {
                 value={form.specialty}
                 onChange={onChange}
               >
-                <option value="">— Select your stream —</option>
+                <option value="">— Sélectionnez votre filière —</option>
                 {lyceeSpecialties.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.label} — {s.labelAr}
@@ -134,7 +134,7 @@ export default function SignUpPage() {
           )}
 
           <div className="form-group">
-            <label className="form-label" htmlFor="age">Age</label>
+            <label className="form-label" htmlFor="age">Âge</label>
             <input
               id="age"
               className="form-input"
@@ -150,7 +150,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="tel">Phone</label>
+            <label className="form-label" htmlFor="tel">Téléphone</label>
             <input
               id="tel"
               className="form-input"
@@ -164,7 +164,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
+            <label className="form-label" htmlFor="email">E-mail</label>
             <input
               id="email"
               className="form-input"
@@ -178,7 +178,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label" htmlFor="password">Password</label>
+            <label className="form-label" htmlFor="password">Mot de passe</label>
             <input
               id="password"
               className="form-input"
@@ -187,17 +187,17 @@ export default function SignUpPage() {
               name="password"
               value={form.password}
               onChange={onChange}
-              placeholder="Choose a password"
+              placeholder="Choisissez un mot de passe"
             />
           </div>
         </div>
 
         <button className="btn btn-primary auth-submit" style={{ width: "100%" }} type="submit">
-          Create Account
+          Créer un Compte
         </button>
 
         <p className="auth-footer">
-          Already have an account? <Link to="/signin">Sign in</Link>
+          Déjà un compte ? <Link to="/signin">Se connecter</Link>
         </p>
       </motion.form>
     </div>

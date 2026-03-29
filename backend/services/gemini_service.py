@@ -93,10 +93,11 @@ class GeminiService:
         last_exc = None
 
         for attempt in range(settings.GEMINI_MAX_RETRIES + 1):
+            # Use the fast model first; fall back to the thinking model on last retry
             model = (
-                settings.GEMINI_FAST_MODEL
+                settings.GEMINI_MODEL
                 if attempt == settings.GEMINI_MAX_RETRIES
-                else settings.GEMINI_MODEL
+                else settings.GEMINI_FAST_MODEL
             )
 
             try:
@@ -143,12 +144,16 @@ class GeminiService:
             raw = raw[:-3]
         raw = raw.strip()
 
-        first_brace = raw.find("{")
-        last_brace = raw.rfind("}")
-        candidate = raw
-        if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
-            candidate = raw[first_brace:last_brace + 1]
+        # Remove control characters that break JSON parsing (e.g. from math content)
+        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw)
 
+        first_brace = cleaned.find("{")
+        last_brace = cleaned.rfind("}")
+        candidate = cleaned
+        if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
+            candidate = cleaned[first_brace:last_brace + 1]
+
+        # Attempt 1: direct JSON parse
         try:
             data = json.loads(candidate)
             display = data.get("display_text", "").strip()
@@ -157,6 +162,23 @@ class GeminiService:
                 return display, spoken or display
         except json.JSONDecodeError:
             pass
+
+        # Attempt 2: regex extraction for display_text / spoken_text
+        display_match = re.search(
+            r'"display_text"\s*:\s*"((?:[^"\\]|\\.)*)"', candidate, re.DOTALL
+        )
+        spoken_match = re.search(
+            r'"spoken_text"\s*:\s*"((?:[^"\\]|\\.)*)"', candidate, re.DOTALL
+        )
+        if display_match:
+            display = display_match.group(1).strip()
+            # Unescape common JSON escapes
+            display = display.replace('\\"', '"').replace('\\n', '\n').replace('\\\\', '\\')
+            spoken = display
+            if spoken_match:
+                spoken = spoken_match.group(1).strip()
+                spoken = spoken.replace('\\"', '"').replace('\\n', '\n').replace('\\\\', '\\')
+            return display, spoken
 
         print("[gemini] Warning: response was not valid JSON, using raw text.")
         return raw, raw

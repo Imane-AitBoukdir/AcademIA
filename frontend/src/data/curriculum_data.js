@@ -1,24 +1,90 @@
 /**
- * Comprehensive curriculum data for AcademIA.
+ * Curriculum data — dynamically loaded from the API.
  *
  * Hierarchy:
- *   schoolLevel  →  specialty (id)  →  subjects[]
+ *   schoolLevel  →  specialty (id)  →  subjects[]  →  chapters (s1/s2)
  *
- * School levels: primaire, college, lycee
- * Each specialty maps to a list of subjects.
- *
- * PDF path convention (all levels):
- *   /pdfs/{type}/{language}/{specialty}/{subject}/{semester}/{lesson_name}.pdf
- *   type     = courses | exercices | exams
- *   language = fr | ar   (derived from subject)
- *   semester = s1 | s2
+ * All public functions remain synchronous — they read from a module-level
+ * cache that is populated once at app startup via loadCurriculum().
  */
 
-import chapterData from "./chapitres_matières_6eme_année.json";
-import levelData from "./matières_par_année.json";
+const API_URL = "http://localhost:8000";
+
+// ── Module-level cache ──────────────────────────────────────────────────────
+
+let _tree = null;               // Raw tree from API: { levels: [...] }
+let _allSpecialties = [];       // Flat list: [{ id, label, labelAr, subjects, schoolLevel }]
+let _specialtyMap = {};          // id → specialty object
+let _levelSpecialties = {};      // schoolLevel → [specialty]
+let _chapterCache = {};          // "specId|subjectNorm" → { s1: [{name}], s2: [{name}] }
+
+function _normalize(value = "") {
+  return value
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+}
+
+function _buildCache(tree) {
+  _tree = tree;
+  _allSpecialties = [];
+  _specialtyMap = {};
+  _levelSpecialties = {};
+  _chapterCache = {};
+
+  for (const level of tree.levels || []) {
+    _levelSpecialties[level.id] = [];
+    for (const spec of level.specialties || []) {
+      const flat = {
+        id: spec.id,
+        label: spec.label,
+        labelAr: spec.label_ar || "",
+        subjects: (spec.subjects || []).map((s) => s.name),
+        schoolLevel: level.id,
+      };
+      _allSpecialties.push(flat);
+      _specialtyMap[spec.id] = flat;
+      _levelSpecialties[level.id].push(flat);
+
+      // Build chapter cache for each subject
+      for (const subj of spec.subjects || []) {
+        const key = `${spec.id}|${_normalize(subj.name)}`;
+        _chapterCache[key] = {
+          s1: (subj.chapters_s1 || []).map((ch) => ({ _id: ch.id, name: ch.name })),
+          s2: (subj.chapters_s2 || []).map((ch) => ({ _id: ch.id, name: ch.name })),
+        };
+      }
+    }
+  }
+}
+
+// ── Load from API ───────────────────────────────────────────────────────────
+
+let _loadPromise = null;
+
+export async function loadCurriculum() {
+  if (_tree) return _tree;
+  if (_loadPromise) return _loadPromise;
+  _loadPromise = (async () => {
+    const res = await fetch(`${API_URL}/api/curriculum`);
+    if (!res.ok) throw new Error("Failed to load curriculum");
+    const tree = await res.json();
+    _buildCache(tree);
+    return tree;
+  })();
+  return _loadPromise;
+}
+
+export async function reloadCurriculum() {
+  _tree = null;
+  _loadPromise = null;
+  return loadCurriculum();
+}
 
 // ── Subject → language mapping ──────────────────────────────────────────────
-// Subjects taught in Arabic in Morocco's curriculum
+
 const ARABIC_SUBJECTS = new Set([
   "arabe",
   "education_islamique",
@@ -27,283 +93,76 @@ const ARABIC_SUBJECTS = new Set([
 ]);
 
 export function getSubjectLanguage(subjectName) {
-  const key = subjectName
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\s-]+/g, "_");
+  const key = _normalize(subjectName);
   return ARABIC_SUBJECTS.has(key) ? "ar" : "fr";
 }
 
-// ── Specialty definitions ───────────────────────────────────────────────────
+// ── Public API (synchronous, cache-backed) ──────────────────────────────────
 
-// Primaire — 6 levels, subjects from JSON
-const primarySpecialties = (levelData.primary_morocco || []).map((entry) => ({
-  id: entry.level,
-  label: entry.level.replaceAll("_", " "),
-  subjects: entry.subjects,
-}));
-
-// College — 3 levels
-const collegeSubjects = [
-  "Mathematiques",
-  "Francais",
-  "Arabe",
-  "Physique_Chimie",
-  "SVT",
-  "Histoire_Geographie",
-  "Education_islamique",
-  "Anglais",
-];
-
-const collegeSpecialties = [
-  { id: "1ere_annee_college", label: "1ère année collège", subjects: collegeSubjects },
-  { id: "2eme_annee_college", label: "2ème année collège", subjects: collegeSubjects },
-  { id: "3eme_annee_college", label: "3ème année collège", subjects: collegeSubjects },
-];
-
-// Lycée — 7 streams
-const lyceeSpecialties = [
-  {
-    id: "tc",
-    label: "Tronc Commun",
-    labelAr: "الجذع المشترك علوم",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "SVT",
-      "Physique_Chimie", "Histoire_Geographie", "Education_islamique",
-      "Informatique", "Philosophie",
-    ],
+export const ALL_SPECIALTIES = new Proxy([], {
+  get(target, prop) {
+    if (prop === Symbol.iterator) return () => _allSpecialties[Symbol.iterator]();
+    if (prop === "length") return _allSpecialties.length;
+    if (prop === "map") return (...args) => _allSpecialties.map(...args);
+    if (prop === "filter") return (...args) => _allSpecialties.filter(...args);
+    if (prop === "find") return (...args) => _allSpecialties.find(...args);
+    if (prop === "forEach") return (...args) => _allSpecialties.forEach(...args);
+    if (prop === "some") return (...args) => _allSpecialties.some(...args);
+    if (prop === "every") return (...args) => _allSpecialties.every(...args);
+    if (prop === "reduce") return (...args) => _allSpecialties.reduce(...args);
+    if (prop === "flatMap") return (...args) => _allSpecialties.flatMap(...args);
+    if (prop === "slice") return (...args) => _allSpecialties.slice(...args);
+    if (prop === "concat") return (...args) => _allSpecialties.concat(...args);
+    if (prop === "indexOf") return (...args) => _allSpecialties.indexOf(...args);
+    if (prop === "includes") return (...args) => _allSpecialties.includes(...args);
+    const idx = typeof prop === "string" ? Number(prop) : NaN;
+    if (!isNaN(idx)) return _allSpecialties[idx];
+    return Reflect.get(_allSpecialties, prop);
   },
-  {
-    id: "1bac_sm",
-    label: "1Bac Sciences Mathématiques",
-    labelAr: "الأولى باك علوم رياضية",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "Physique_Chimie",
-      "Sciences_Ingenieur", "Philosophie", "Histoire_Geographie",
-      "Education_islamique",
-    ],
+});
+
+export const lyceeSpecialties = new Proxy([], {
+  get(target, prop) {
+    const data = _levelSpecialties["lycee"] || [];
+    if (prop === Symbol.iterator) return () => data[Symbol.iterator]();
+    if (prop === "length") return data.length;
+    if (prop === "map") return (...args) => data.map(...args);
+    if (prop === "filter") return (...args) => data.filter(...args);
+    if (prop === "find") return (...args) => data.find(...args);
+    if (prop === "forEach") return (...args) => data.forEach(...args);
+    if (prop === "some") return (...args) => data.some(...args);
+    if (prop === "slice") return (...args) => data.slice(...args);
+    const idx = typeof prop === "string" ? Number(prop) : NaN;
+    if (!isNaN(idx)) return data[idx];
+    return Reflect.get(data, prop);
   },
-  {
-    id: "1bac_exp",
-    label: "1Bac Sciences Expérimentales",
-    labelAr: "الأولى باك علوم تجريبية",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "Physique_Chimie",
-      "SVT", "Philosophie", "Histoire_Geographie", "Education_islamique",
-    ],
-  },
-  {
-    id: "2bac_sm_a",
-    label: "2Bac Sciences Mathématiques A",
-    labelAr: "الثانية باك علوم رياضية أ",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "Physique_Chimie",
-      "Philosophie", "Histoire_Geographie", "Education_islamique",
-    ],
-  },
-  {
-    id: "2bac_sm_b",
-    label: "2Bac Sciences Mathématiques B",
-    labelAr: "الثانية باك علوم رياضية ب",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "Physique_Chimie",
-      "Sciences_Ingenieur", "Philosophie", "Histoire_Geographie",
-      "Education_islamique",
-    ],
-  },
-  {
-    id: "2bac_svt",
-    label: "2Bac SVT",
-    labelAr: "الثانية باك علوم الحياة والأرض",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "Physique_Chimie",
-      "SVT", "Philosophie", "Histoire_Geographie", "Education_islamique",
-    ],
-  },
-  {
-    id: "2bac_pc",
-    label: "2Bac Physique-Chimie",
-    labelAr: "الثانية باك علوم فيزيائية",
-    subjects: [
-      "Arabe", "Francais", "Anglais", "Mathematiques", "Physique_Chimie",
-      "SVT", "Philosophie", "Histoire_Geographie", "Education_islamique",
-    ],
-  },
-];
-
-// ── All specialties in a flat lookup ────────────────────────────────────────
-
-const ALL_SPECIALTIES = [
-  ...primarySpecialties,
-  ...collegeSpecialties,
-  ...lyceeSpecialties,
-];
-
-const specialtyMap = Object.fromEntries(
-  ALL_SPECIALTIES.map((s) => [s.id, s]),
-);
-
-// ── Chapter data ────────────────────────────────────────────────────────────
-
-const subjectAliases = {
-  activite_scientifique: "sciences_et_technologie",
-};
-
-// ── Chapter helpers ──────────────────────────────────────────────────────────
-// Each chapter entry: { name: string }
-// PDFs are fetched dynamically from the GridFS API.
-
-function mkChapters(s1Names, s2Names) {
-  return {
-    s1: s1Names.map((name) => ({ name })),
-    s2: s2Names.map((name) => ({ name })),
-  };
-}
-
-// Split a flat name array evenly across s1 and s2 (used for JSON-sourced data)
-function flatToGrouped(arr) {
-  if (!arr?.length) return { s1: [], s2: [] };
-  const half = Math.ceil(arr.length / 2);
-  return {
-    s1: arr.slice(0, half).map((name) => ({ name })),
-    s2: arr.slice(half).map((name) => ({ name })),
-  };
-}
-
-const collegeChapters = {
-  mathematiques: mkChapters(
-    ["Nombres relatifs", "Puissances et calculs"],
-    ["Proportionnalité", "Géométrie plane"],
-  ),
-  francais: mkChapters(
-    ["Compréhension de texte", "Grammaire"],
-    ["Conjugaison", "Rédaction"],
-  ),
-  arabe: mkChapters(
-    ["النصوص", "التراكيب"],
-    ["الصرف", "التعبير"],
-  ),
-  physique_chimie: mkChapters(
-    ["Matière", "Mouvement"],
-    ["Energie", "Réactions chimiques"],
-  ),
-  svt: mkChapters(
-    ["Cellule", "Reproduction"],
-    ["Ecosystèmes", "Santé"],
-  ),
-  histoire_geographie: mkChapters(
-    ["Repères historiques", "Carte et territoire"],
-    ["Population", "Citoyenneté"],
-  ),
-  education_islamique: mkChapters(
-    ["القرآن", "العقيدة"],
-    ["السيرة", "القيم"],
-  ),
-  anglais: mkChapters(
-    ["Basic communication", "Grammar essentials"],
-    ["Vocabulary", "Reading"],
-  ),
-};
-
-// Maths chapters shared by 2Bac SM A and B
-const _2bacSM_maths = mkChapters(
-  [
-    "Dérivation et étude des fonctions",
-    "Fonctions exponentielles",
-    "Fonctions logarithmiques",
-    "Limites et continuité",
-    "Nombres complexes",
-    "Suites numériques",
-  ],
-  [
-    "Arithmétique dans Z",
-    "Calcul de probabilités",
-    "Calcul intégral",
-    "Équations différentielles",
-    "Espaces vectoriels",
-    "Structures algébriques",
-  ],
-);
-
-const lyceeChapters = {
-  "2bac_sm_a": { mathematiques: _2bacSM_maths },
-  "2bac_sm_b": { mathematiques: _2bacSM_maths },
-};
-
-const defaultChapters = mkChapters(
-  ["Introduction", "Notions essentielles"],
-  ["Exercices guidés", "Révision finale"],
-);
-
-// ── Public API ──────────────────────────────────────────────────────────────
-
-export { ALL_SPECIALTIES, collegeSpecialties, lyceeSpecialties, primarySpecialties };
+});
 
 export function getSchoolLevels() {
-  return ["primaire", "college", "lycee"];
+  return (_tree?.levels || []).map((l) => l.id);
 }
 
-/**
- * Returns the list of specialties for a given school level.
- * Each item: { id, label, labelAr?, subjects }
- */
+export function getSchoolLevelsWithLabels() {
+  return (_tree?.levels || []).map((l) => ({ id: l.id, label: l.label }));
+}
+
 export function getSpecialtiesForSchoolLevel(schoolLevel) {
-  if (schoolLevel === "primaire") return primarySpecialties;
-  if (schoolLevel === "college") return collegeSpecialties;
-  if (schoolLevel === "lycee") return lyceeSpecialties;
-  return [];
+  return _levelSpecialties[schoolLevel] || [];
 }
 
-/**
- * Returns subjects for a specialty ID (e.g. "tc", "6eme_annee_primaire").
- */
 export function getSubjectsBySpecialty(specialtyId) {
-  return specialtyMap[specialtyId]?.subjects || [];
+  return _specialtyMap[specialtyId]?.subjects || [];
 }
 
-/**
- * Returns the specialty object by ID.
- */
 export function getSpecialtyById(specialtyId) {
-  return specialtyMap[specialtyId] || null;
+  return _specialtyMap[specialtyId] || null;
 }
 
-/**
- * Returns chapters for a given specialty + subject.
- * Uses JSON data where available, otherwise falls back to hardcoded/default.
- */
 export function getChaptersForSubject(specialtyId, subjectName) {
-  const normalized = subjectName
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, "_");
-
-  // 6ème primaire JSON data → split evenly across s1 / s2
-  if (specialtyId === chapterData.level) {
-    const key = subjectAliases[normalized] || normalized;
-    const chapters = chapterData.subjects[key];
-    if (chapters?.length) return flatToGrouped(chapters);
-  }
-
-  // College
-  if (specialtyId.includes("college")) {
-    return collegeChapters[normalized] || defaultChapters;
-  }
-
-  // Lycée — static chapter data
-  if (lyceeChapters[specialtyId]?.[normalized]) {
-    return lyceeChapters[specialtyId][normalized];
-  }
-
-  return defaultChapters;
+  const key = `${specialtyId}|${_normalize(subjectName)}`;
+  return _chapterCache[key] || { s1: [], s2: [] };
 }
 
-/**
- * Derives the default specialty ID from the user's stored profile.
- */
 export function getDefaultSpecialty(user) {
   if (!user) return "6eme_annee_primaire";
   const ns = user.niveauScolaire || "primaire";

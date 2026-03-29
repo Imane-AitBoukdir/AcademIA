@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import { loadCurriculum } from "./lib/curriculum";
+import AdminPage from "./pages/AdminPage";
 import CoursePage from "./pages/CoursePage";
 import DashboardPage from "./pages/DashboardPage";
 import ExercicePage from "./pages/ExercicePage";
@@ -22,6 +25,23 @@ function PublicLayout({ children }) {
 }
 
 export default function App() {
+	const [ready, setReady] = useState(false);
+
+	useEffect(() => {
+		loadCurriculum().then(() => setReady(true)).catch(() => setReady(true));
+	}, []);
+
+	if (!ready) {
+		return (
+			<div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+				<div className="text-center">
+					<div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+					<p className="text-gray-600 dark:text-gray-300">Chargement…</p>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<Routes>
 			<Route path="/" element={<PublicLayout><HomePage /></PublicLayout>} />
@@ -35,6 +55,7 @@ export default function App() {
 			<Route path="/prof-ai" element={<ProfAIPage />} />
 			<Route path="/profil" element={<ProfilPage />} />
 			<Route path="/settings" element={<SettingsPage />} />
+			<Route path="/admin" element={<AdminPage />} />
 			<Route path="*" element={<Navigate to="/" replace />} />
 		</Routes>
 	);

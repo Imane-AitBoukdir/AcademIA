@@ -19,14 +19,14 @@ export default function SignInPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.detail || "Sign in failed.");
+        setError(data.detail || "La connexion a échoué.");
         return;
       }
       const user = await res.json();
       localStorage.setItem("academiaUser", JSON.stringify(user));
       navigate("/dashboard");
     } catch {
-      setError("Cannot reach server. Please try again.");
+      setError("Impossible de joindre le serveur. Veuillez réessayer.");
     }
   };
 
@@ -40,14 +40,14 @@ export default function SignInPage() {
         transition={{ duration: 0.4 }}
       >
         <div className="auth-header">
-          <h1>Welcome back</h1>
-          <p>Sign in to continue learning.</p>
+          <h1>Bon retour</h1>
+          <p>Connectez-vous pour continuer.</p>
           {error && <p style={{ color: "#e53e3e", marginTop: 8 }}>{error}</p>}
         </div>
 
         <div className="form-grid">
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
+            <label className="form-label" htmlFor="email">E-mail</label>
             <input
               id="email"
               className="form-input"
@@ -60,7 +60,7 @@ export default function SignInPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+            <label className="form-label" htmlFor="password">Mot de passe</label>
             <input
               id="password"
               className="form-input"
@@ -68,17 +68,17 @@ export default function SignInPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
+              placeholder="Votre mot de passe"
             />
           </div>
         </div>
 
         <button className="btn btn-primary auth-submit" style={{ width: "100%" }} type="submit">
-          Sign In
+          Se Connecter
         </button>
 
         <p className="auth-footer">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+          Pas encore de compte ? <Link to="/signup">S'inscrire</Link>
         </p>
       </motion.form>
     </div>

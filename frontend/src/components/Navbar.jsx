@@ -1,6 +1,6 @@
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const location = useLocation();
@@ -39,10 +39,10 @@ export default function Navbar() {
           </button>
           <div className="navbar-divider" />
           <Link to="/signin" className="navbar-link" onClick={() => setOpen(false)}>
-            Sign In
+            Se Connecter
           </Link>
           <Link to="/signup" className="btn btn-primary btn-sm" onClick={() => setOpen(false)}>
-            Sign Up
+            S'Inscrire
           </Link>
         </div>
       </div>

@@ -14,6 +14,10 @@ import database
 from .models import SignUpRequest, SignInRequest, UserOut
 
 
+_ADMIN_EMAIL = "admin@academia.ma"
+_ADMIN_PASSWORD = "Admin@2024"
+
+
 async def signup_user(body: SignUpRequest) -> UserOut:
     db = database.get_db()
 
@@ -32,6 +36,7 @@ async def signup_user(body: SignUpRequest) -> UserOut:
         "age": body.age,
         "niveauScolaire": body.niveauScolaire,
         "specialty": body.specialty,
+        "role": "student",
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.users.insert_one(doc)
@@ -45,6 +50,7 @@ async def signup_user(body: SignUpRequest) -> UserOut:
         age=body.age,
         niveauScolaire=body.niveauScolaire,
         specialty=body.specialty,
+        role="student",
     )
 
 
@@ -54,7 +60,7 @@ async def signin_user(body: SignInRequest) -> UserOut:
     user = await db.users.find_one({"email": body.email})
 
     # Use constant-time comparison even when user not found (prevent timing attacks)
-    dummy_hash = b"$2b$12$invalidhashforthisuserthatdoesnotexistXXXXXXXXXXXXXXXXXXXX"
+    dummy_hash = bcrypt.hashpw(b"dummy_password_for_timing", bcrypt.gensalt(rounds=4))
     stored_hash = user["password_hash"].encode() if user else dummy_hash
     password_ok = bcrypt.checkpw(body.password.encode(), stored_hash)
 
@@ -70,4 +76,29 @@ async def signin_user(body: SignInRequest) -> UserOut:
         age=user.get("age", 0),
         niveauScolaire=user.get("niveauScolaire", ""),
         specialty=user.get("specialty", ""),
+        role=user.get("role", "student"),
     )
+
+
+async def seed_admin() -> dict:
+    """Create the admin user if it does not already exist."""
+    db = database.get_db()
+    existing = await db.users.find_one({"email": _ADMIN_EMAIL})
+    if existing:
+        return {"status": "exists", "email": _ADMIN_EMAIL}
+
+    hashed = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), bcrypt.gensalt(rounds=12))
+    doc = {
+        "prenom": "Admin",
+        "nom": "AcademIA",
+        "email": _ADMIN_EMAIL,
+        "password_hash": hashed.decode(),
+        "tel": "",
+        "age": 0,
+        "niveauScolaire": "lycee",
+        "specialty": "",
+        "role": "admin",
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.users.insert_one(doc)
+    return {"status": "created", "email": _ADMIN_EMAIL}

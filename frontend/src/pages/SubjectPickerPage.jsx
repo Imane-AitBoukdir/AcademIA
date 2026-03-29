@@ -54,14 +54,14 @@ function getSubjectMeta(subject) {
 }
 
 const modeConfig = {
-  courses: { title: "Courses", desc: "Read lessons and chapters", routePrefix: "/courses" },
-  exercises: { title: "Exercises", desc: "Practice with exercises", routePrefix: "/exercises" },
-  "mock-exams": { title: "Mock Exams", desc: "Prepare with exam simulations", routePrefix: "/mock-exams" },
+  courses: { title: "Cours", desc: "Consultez les leçons et chapitres", routePrefix: "/courses" },
+  exercises: { title: "Exercices", desc: "Entraînez-vous avec des exercices", routePrefix: "/exercises" },
+  "mock-exams": { title: "Examens Blancs", desc: "Préparez-vous avec des simulations d'examens", routePrefix: "/mock-exams" },
 };
 
 function getUser() {
   return JSON.parse(localStorage.getItem("academiaUser") || "null") || {
-    prenom: "Student",
+    prenom: "Élève",
     niveauScolaire: "primaire",
   };
 }
@@ -76,6 +76,7 @@ export default function SubjectPickerPage() {
 
   const [selectedSpecialty, setSelectedSpecialty] = useState(defaultSpecialty);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const subjects = useMemo(
     () => getSubjectsBySpecialty(selectedSpecialty),
     [selectedSpecialty],
@@ -104,18 +105,14 @@ export default function SubjectPickerPage() {
         >
           <div className="dash-greeting-text">
             <h1 className="dash-greeting-title">{config.title}</h1>
-            <p className="dash-greeting-sub">
-              Choose a subject to get started
-            </p>
+            <p className="dash-greeting-sub">Choisissez une matière pour commencer</p>
           </div>
         </motion.section>
 
         <section className="dash-section">
           <div className="content-title-row">
-            <p className="content-title">Your Subjects</p>
-            <span className="content-title-count">
-              {subjects.length} subjects
-            </span>
+            <p className="content-title">Vos Matières</p>
+            <span className="content-title-count">{subjects.length} matières</span>
           </div>
           <div className="subject-grid">
             {subjects.map((subject, index) => {
@@ -127,10 +124,7 @@ export default function SubjectPickerPage() {
                   className={`subject-card accent-${accent}`}
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    delay: 0.1 + index * 0.05,
-                    duration: 0.35,
-                  }}
+                  transition={{ delay: 0.1 + index * 0.05, duration: 0.35 }}
                 >
                   <div className="subject-card-img">
                     <img
@@ -150,16 +144,11 @@ export default function SubjectPickerPage() {
                       onClick={() =>
                         navigate(
                           `${config.routePrefix}/${selectedSpecialty}/${subject}`,
-                          {
-                            state: {
-                              subjectName: subject,
-                              specialty: selectedSpecialty,
-                            },
-                          },
+                          { state: { subjectName: subject, specialty: selectedSpecialty } },
                         )
                       }
                     >
-                      Open <ArrowRight size={15} />
+                      Ouvrir <ArrowRight size={15} />
                     </button>
                   </div>
                 </motion.div>

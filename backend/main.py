@@ -16,6 +16,10 @@ from auth.router import router as auth_router
 from pdfs.router import router as pdf_router
 from api.chat import router as chat_router
 from api.sessions import router as sessions_router
+from api.exams import router as exams_router
+from curriculum.router import router as curriculum_router
+from curriculum.seed import seed_curriculum
+from auth.service import seed_admin
 
 
 @asynccontextmanager
@@ -23,6 +27,8 @@ async def lifespan(app: FastAPI):
     # Startup
     await database.connect()
     session_manager.init_store(db=database.get_db())
+    await seed_admin()
+    await seed_curriculum(database.get_db())
     yield
     # Shutdown
     await database.disconnect()
@@ -42,6 +48,8 @@ app.include_router(auth_router)
 app.include_router(pdf_router)
 app.include_router(chat_router)
 app.include_router(sessions_router)
+app.include_router(exams_router)
+app.include_router(curriculum_router)
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

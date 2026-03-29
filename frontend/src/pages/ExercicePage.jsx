@@ -1,29 +1,46 @@
 import { motion } from "framer-motion";
-import { CheckCircle, ChevronRight, FileText, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { CheckCircle, ChevronRight, FileText, Menu, PanelLeftClose, PanelLeftOpen, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
+import EditableChapterSidebar from "../components/EditableChapterSidebar";
 import Sidebar from "../components/Sidebar";
 import {
+    deletePdf,
     fetchChapterPdfs,
     formatSubjectName,
     getChaptersForSubject,
     getPdfUrl,
+    getSchoolLevelsWithLabels,
+    getSpecialtiesForSchoolLevel,
+    getSpecialtyById,
     normalizeValue,
+    uploadPdf,
 } from "../lib/curriculum";
 
 export default function ExercicePage() {
   const params = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const isAdmin = (() => {
+    try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").role === "admin"; } catch { return false; }
+  })();
+  const userEmail = (() => {
+    try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").email || ""; } catch { return ""; }
+  })();
+  const canDelete = (pdf) => isAdmin || (pdf.uploadedBy && pdf.uploadedBy === userEmail);
 
   const specialty = params.specialty || location.state?.specialty || "6eme_annee_primaire";
   const rawSubject = decodeURIComponent(
     params.subject || location.state?.subjectName || "Mathematiques",
   );
 
+  const [refreshKey, setRefreshKey] = useState(0);
   const groupedChapters = useMemo(
     () => getChaptersForSubject(specialty, rawSubject),
-    [specialty, rawSubject],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [specialty, rawSubject, refreshKey],
   );
   const [selectedChapter, setSelectedChapter] = useState(() => {
     const d = getChaptersForSubject(specialty, rawSubject);
@@ -40,6 +57,7 @@ export default function ExercicePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [exercisePdfs, setExercisePdfs] = useState([]);
+  const [selectedExIndex, setSelectedExIndex] = useState(0);
   const [coursePdfs, setCoursePdfs] = useState([]);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [chaptersWidth, setChaptersWidth] = useState(280);
@@ -47,8 +65,7 @@ export default function ExercicePage() {
   const [isResizing, setIsResizing] = useState(false);
   const isResizingRef = useRef(false);
   const isChatResizingRef = useRef(false);
-
-  /* ── Resize handler for chapter sidebar ── */
+  const fileInputRef = useRef(null);
   const handleResizeMouseDown = useCallback((e) => {
     e.preventDefault();
     isResizingRef.current = true;
@@ -90,16 +107,32 @@ export default function ExercicePage() {
     document.addEventListener("mouseup", onMouseUp);
   }, [chatWidth]);
 
-  useEffect(() => {
+  const refreshPdfs = useCallback(() => {
     let cancelled = false;
     fetchChapterPdfs("exercices", specialty, rawSubject, selectedChapter.semester, selectedChapter.name)
-      .then((list) => { if (!cancelled) setExercisePdfs(list); });
+      .then((list) => { if (!cancelled) { setExercisePdfs(list); setSelectedExIndex(0); } });
     fetchChapterPdfs("courses", specialty, rawSubject, selectedChapter.semester, selectedChapter.name)
       .then((list) => { if (!cancelled) setCoursePdfs(list); });
     return () => { cancelled = true; };
   }, [specialty, rawSubject, selectedChapter.name, selectedChapter.semester]);
 
-  const exercisePdfUrl = exercisePdfs[0] ? getPdfUrl(exercisePdfs[0].id) : null;
+  useEffect(() => refreshPdfs(), [refreshPdfs]);
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadPdf(file, "exercices", specialty, rawSubject, selectedChapter.semester, selectedChapter.name);
+    refreshPdfs();
+    fileInputRef.current.value = "";
+  };
+
+  const handleDelete = async (fileId) => {
+    if (!window.confirm("Supprimer ce PDF ?")) return;
+    await deletePdf(fileId);
+    refreshPdfs();
+  };
+
+  const exercisePdfUrl = exercisePdfs[selectedExIndex] ? getPdfUrl(exercisePdfs[selectedExIndex].id) : null;
   const coursePdfUrl = coursePdfs[0] ? getPdfUrl(coursePdfs[0].id) : null;
 
   const chapterKey = `ex_${normalizeValue(specialty)}_${normalizeValue(rawSubject)}_${selectedChapter.semester}_${normalizeValue(selectedChapter.name)}`;
@@ -136,58 +169,53 @@ export default function ExercicePage() {
             {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <div className="course-breadcrumb">
-            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/dashboard">Tableau de Bord</Link>
             <ChevronRight size={14} />
-            <span>Exercises</span>
+            <span>Exercices</span>
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
             <ChevronRight size={14} />
             <span>{selectedChapter.name}</span>
           </div>
-          <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
+          {isAdmin ? (
+            <div className="admin-specialty-switcher">
+              <select
+                className="admin-switcher-select"
+                value={getSpecialtyById(specialty)?.schoolLevel || ""}
+                onChange={(e) => {
+                  const specs = getSpecialtiesForSchoolLevel(e.target.value);
+                  if (specs.length) navigate(`/exercises/${specs[0].id}/${encodeURIComponent(rawSubject)}`);
+                }}
+              >
+                {getSchoolLevelsWithLabels().map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+              </select>
+              <select
+                className="admin-switcher-select"
+                value={specialty}
+                onChange={(e) => navigate(`/exercises/${e.target.value}/${encodeURIComponent(rawSubject)}`)}
+              >
+                {getSpecialtiesForSchoolLevel(getSpecialtyById(specialty)?.schoolLevel || "").map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
+          )}
         </header>
 
         <div
           className={`course-body${isResizing ? " resizing" : ""}`}
           style={{ gridTemplateColumns: `${chaptersWidth}px 6px 1fr` }}
         >
-          <aside className="chapter-sidebar">
-            <h2>Chapters</h2>
-            <div className="chapter-list">
-              {groupedChapters.s1?.length > 0 && (
-                <>
-                  <p className="semester-label">Semestre 1</p>
-                  {groupedChapters.s1.map((ch) => (
-                    <button
-                      key={`ex-s1-${normalizeValue(rawSubject)}-${ch.name}`}
-                      type="button"
-                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s1" ? "chapter-item active" : "chapter-item"}
-                      onClick={() => { setSelectedChapter({ ...ch, semester: "s1" }); setChatOpen(false); }}
-                    >
-                      <FileText size={14} />
-                      <span>{ch.name}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-              {groupedChapters.s2?.length > 0 && (
-                <>
-                  <p className="semester-label" style={{ marginTop: groupedChapters.s1?.length > 0 ? "0.75rem" : 0 }}>Semestre 2</p>
-                  {groupedChapters.s2.map((ch) => (
-                    <button
-                      key={`ex-s2-${normalizeValue(rawSubject)}-${ch.name}`}
-                      type="button"
-                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s2" ? "chapter-item active" : "chapter-item"}
-                      onClick={() => { setSelectedChapter({ ...ch, semester: "s2" }); setChatOpen(false); }}
-                    >
-                      <FileText size={14} />
-                      <span>{ch.name}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-            </div>
-          </aside>
+          <EditableChapterSidebar
+            specialty={specialty}
+            rawSubject={rawSubject}
+            groupedChapters={groupedChapters}
+            selectedChapter={selectedChapter}
+            onSelectChapter={(ch) => { setSelectedChapter(ch); setChatOpen(false); }}
+            onChaptersChanged={() => setRefreshKey((k) => k + 1)}
+          />
 
           {/* Resize handle */}
           <div className="chapter-resize-handle" onMouseDown={handleResizeMouseDown} />
@@ -204,6 +232,37 @@ export default function ExercicePage() {
               transition={{ duration: 0.25 }}
             >
               <div className="pdf-viewer-area">
+                <div className="pdf-toolbar">
+                  {exercisePdfs.length > 0 && (
+                    <div className="pdf-tabs">
+                      {exercisePdfs.map((pdf, i) => (
+                        <button
+                          key={pdf.id}
+                          type="button"
+                          className={`pdf-tab${selectedExIndex === i ? " active" : ""}${canDelete(pdf) ? " deletable" : ""}`}
+                          onClick={() => setSelectedExIndex(i)}
+                          title={pdf.filename}
+                        >
+                          <FileText size={13} />
+                          Partie {i + 1}
+                          {canDelete(pdf) && (
+                            <span
+                              className="pdf-tab-x"
+                              onClick={(e) => { e.stopPropagation(); handleDelete(pdf.id); }}
+                              title="Supprimer"
+                            >
+                              <X size={11} />
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button className="pdf-upload-btn" type="button" onClick={() => fileInputRef.current?.click()}>
+                    <Upload size={14} /> Importer un PDF
+                  </button>
+                  <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleUpload} />
+                </div>
                 {exercisePdfUrl ? (
                   <iframe
                     src={exercisePdfUrl}
@@ -213,8 +272,8 @@ export default function ExercicePage() {
                 ) : (
                   <div className="pdf-fallback">
                     <FileText size={32} />
-                    <h3>Exercises — {selectedChapter.name}</h3>
-                    <p>No exercise PDFs uploaded yet for this chapter.</p>
+                    <h3>Exercices — {selectedChapter.name}</h3>
+                    <p>Aucun PDF d'exercices importé pour ce chapitre.</p>
                   </div>
                 )}
               </div>
@@ -246,7 +305,7 @@ export default function ExercicePage() {
             type="button"
           >
             <CheckCircle size={22} />
-            <span className="ai-fab-label">Correct with AI</span>
+            <span className="ai-fab-label">Corriger avec l'IA</span>
           </button>
         )}
       </main>

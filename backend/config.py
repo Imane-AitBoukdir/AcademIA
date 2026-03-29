@@ -18,7 +18,7 @@ class Settings:
     TTS_OUTPUT_FORMAT: str  = "mp3_44100_128"
 
     # Retry config
-    GEMINI_MAX_RETRIES: int     = 3      # attempts after first failure
+    GEMINI_MAX_RETRIES: int     = 2      # attempts after first failure
     GEMINI_BACKOFF_BASE: float  = 1.5   # seconds (doubles each attempt)
     GEMINI_BACKOFF_CAP: float   = 32.0  # max wait seconds
 

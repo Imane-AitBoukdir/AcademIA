@@ -7,7 +7,6 @@ import {
     Landmark,
     Languages,
     Leaf,
-    Lightbulb,
     Menu,
     PenTool,
     PlayCircle,
@@ -56,14 +55,14 @@ function getSubjectMeta(subject) {
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "Bonjour";
+  if (hour < 18) return "Bon après-midi";
+  return "Bonsoir";
 }
 
 function getUser() {
   return JSON.parse(localStorage.getItem("academiaUser") || "null") || {
-    prenom: "Student",
+    prenom: "Élève",
     niveauScolaire: "primaire",
   };
 }
@@ -112,7 +111,7 @@ export default function DashboardPage() {
             transition={{ delay: 0.08, duration: 0.3 }}
             whileHover={{ y: -3, transition: { duration: 0.15 } }}
           >
-            AI Teacher
+            Prof IA
           </motion.button>
         </div>
 
@@ -127,13 +126,13 @@ export default function DashboardPage() {
             <h1 className="dash-greeting-title">
               {getGreeting()}, <span className="dash-greeting-name">{user.prenom}</span>
             </h1>
-            <p className="dash-greeting-sub">Ready to continue learning?</p>
+            <p className="dash-greeting-sub">Prêt à continuer l'apprentissage ?</p>
           </div>
         </motion.section>
 
-        {/* ── Resume + Suggestions side by side ── */}
+        {/* ── Resume ── */}
         <div className="dash-twin-sections">
-          <section className="dash-section dash-twin">
+          <section className="dash-section">
             <div className="dash-section-header">
               <RotateCcw size={18} className="dash-section-icon" />
               <h2 className="dash-section-title">Reprendre ou j'ai laisse</h2>
@@ -212,57 +211,13 @@ export default function DashboardPage() {
             )}
             </div>
           </section>
-
-          <section className="dash-section dash-twin">
-            <div className="dash-section-header">
-              <Lightbulb size={18} className="dash-section-icon" />
-              <h2 className="dash-section-title">Suggestions</h2>
-            </div>
-            <div className="dash-suggestions-stack">
-            <motion.div
-              className="dash-suggestion-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.26, duration: 0.3 }}
-            >
-              <div className="suggestion-icon accent-sunshine">
-                <RotateCcw size={18} />
-              </div>
-              <div>
-                <h3>Tu devrais revoir ce chapitre</h3>
-                <p>Proportionnalite — certaines notions meritent detre revues.</p>
-              </div>
-              <button className="card-action" type="button">
-                Revoir <ArrowRight size={15} />
-              </button>
-            </motion.div>
-
-            <motion.div
-              className="dash-suggestion-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.32, duration: 0.3 }}
-            >
-              <div className="suggestion-icon accent-mint">
-                <PenTool size={18} />
-              </div>
-              <div>
-                <h3>Exercices recommandes</h3>
-                <p>5 exercices sur les Nombres relatifs pour renforcer tes acquis.</p>
-              </div>
-              <button className="card-action" type="button">
-                Commencer <ArrowRight size={15} />
-              </button>
-            </motion.div>
-            </div>
-          </section>
         </div>
 
         {/* ── Subject grid ── */}
         <section className="dash-section">
           <div className="content-title-row">
-            <p className="content-title">Your Subjects</p>
-            <span className="content-title-count">{subjects.length} subjects</span>
+            <p className="content-title">Vos Matières</p>
+            <span className="content-title-count">{subjects.length} matières</span>
           </div>
           <div className="subject-grid">
             {subjects.map((subject, index) => {
@@ -281,7 +236,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="subject-card-body">
                     <h3 className="subject-card-title">{formatSubjectName(subject)}</h3>
-                    <p className="subject-card-desc">Explore chapters, lessons and exercises</p>
+                    <p className="subject-card-desc">Explorez les chapitres, cours et exercices</p>
                     <button
                       className="card-action"
                       type="button"
@@ -291,7 +246,7 @@ export default function DashboardPage() {
                         })
                       }
                     >
-                      Open <ArrowRight size={15} />
+                      Ouvrir <ArrowRight size={15} />
                     </button>
                   </div>
                 </motion.div>

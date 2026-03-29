@@ -84,7 +84,7 @@ export default function ProfilPage() {
             </div>
 
             <label className="profil-label">
-              <Mail size={15} /> Email
+              <Mail size={15} /> E-mail
               <input name="email" type="email" value={user.email} onChange={onChange} className="profil-input" />
             </label>
 

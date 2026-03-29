@@ -1,15 +1,21 @@
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronRight, FileText, Menu, PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronRight, FileText, Menu, PanelLeftClose, PanelLeftOpen, Sparkles, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
+import EditableChapterSidebar from "../components/EditableChapterSidebar";
 import Sidebar from "../components/Sidebar";
 import {
+    deletePdf,
     fetchChapterPdfs,
     formatSubjectName,
     getChaptersForSubject,
     getPdfUrl,
+    getSchoolLevelsWithLabels,
+    getSpecialtiesForSchoolLevel,
+    getSpecialtyById,
     normalizeValue,
+    uploadPdf,
 } from "../lib/curriculum";
 
 export default function CoursePage() {
@@ -17,14 +23,24 @@ export default function CoursePage() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isAdmin = (() => {
+    try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").role === "admin"; } catch { return false; }
+  })();
+  const userEmail = (() => {
+    try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").email || ""; } catch { return ""; }
+  })();
+  const canDelete = (pdf) => isAdmin || (pdf.uploadedBy && pdf.uploadedBy === userEmail);
+
   const specialty = params.specialty || location.state?.specialty || "6eme_annee_primaire";
   const rawSubject = decodeURIComponent(
     params.subject || location.state?.subjectName || "Mathematiques",
   );
 
+  const [refreshKey, setRefreshKey] = useState(0);
   const groupedChapters = useMemo(
     () => getChaptersForSubject(specialty, rawSubject),
-    [specialty, rawSubject],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [specialty, rawSubject, refreshKey],
   );
   const [selectedChapter, setSelectedChapter] = useState(() => {
     const d = getChaptersForSubject(specialty, rawSubject);
@@ -42,8 +58,7 @@ export default function CoursePage() {
   const [isResizing, setIsResizing] = useState(false);
   const isResizingRef = useRef(false);
   const isChatResizingRef = useRef(false);
-
-  /* ── Resize handler for chapter sidebar ── */
+  const fileInputRef = useRef(null);
   const handleResizeMouseDown = useCallback((e) => {
     e.preventDefault();
     isResizingRef.current = true;
@@ -89,12 +104,28 @@ export default function CoursePage() {
     document.addEventListener("mouseup", onMouseUp);
   }, [chatWidth]);
 
-  useEffect(() => {
+  const refreshPdfs = useCallback(() => {
     let cancelled = false;
     fetchChapterPdfs("courses", specialty, rawSubject, selectedChapter.semester, selectedChapter.name)
       .then((list) => { if (!cancelled) { setPdfList(list); setSelectedPdfIndex(0); } });
     return () => { cancelled = true; };
   }, [specialty, rawSubject, selectedChapter.name, selectedChapter.semester]);
+
+  useEffect(() => refreshPdfs(), [refreshPdfs]);
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadPdf(file, "courses", specialty, rawSubject, selectedChapter.semester, selectedChapter.name);
+    refreshPdfs();
+    fileInputRef.current.value = "";
+  };
+
+  const handleDelete = async (fileId) => {
+    if (!window.confirm("Supprimer ce PDF ?")) return;
+    await deletePdf(fileId);
+    refreshPdfs();
+  };
 
   const currentPdfUrl = pdfList[selectedPdfIndex]
     ? getPdfUrl(pdfList[selectedPdfIndex].id)
@@ -134,55 +165,51 @@ export default function CoursePage() {
             {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <div className="course-breadcrumb">
-            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/dashboard">Tableau de Bord</Link>
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
             <ChevronRight size={14} />
             <span>{selectedChapter.name}</span>
           </div>
-          <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
+          {isAdmin ? (
+            <div className="admin-specialty-switcher">
+              <select
+                className="admin-switcher-select"
+                value={getSpecialtyById(specialty)?.schoolLevel || ""}
+                onChange={(e) => {
+                  const specs = getSpecialtiesForSchoolLevel(e.target.value);
+                  if (specs.length) navigate(`/courses/${specs[0].id}/${encodeURIComponent(rawSubject)}`);
+                }}
+              >
+                {getSchoolLevelsWithLabels().map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+              </select>
+              <select
+                className="admin-switcher-select"
+                value={specialty}
+                onChange={(e) => navigate(`/courses/${e.target.value}/${encodeURIComponent(rawSubject)}`)}
+              >
+                {getSpecialtiesForSchoolLevel(getSpecialtyById(specialty)?.schoolLevel || "").map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
+          )}
         </header>
 
         <div
           className={`course-body${isResizing ? " resizing" : ""}`}
           style={{ gridTemplateColumns: `${chaptersWidth}px 6px 1fr` }}
         >
-          <aside className="chapter-sidebar">
-            <h2>Chapters</h2>
-            <div className="chapter-list">
-              {groupedChapters.s1?.length > 0 && (
-                <>
-                  <p className="semester-label">Semestre 1</p>
-                  {groupedChapters.s1.map((ch) => (
-                    <button
-                      key={`s1-${normalizeValue(rawSubject)}-${ch.name}`}
-                      type="button"
-                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s1" ? "chapter-item active" : "chapter-item"}
-                      onClick={() => { setSelectedChapter({ ...ch, semester: "s1" }); setSelectedPdfIndex(0); setChatOpen(false); }}
-                    >
-                      <FileText size={14} />
-                      <span>{ch.name}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-              {groupedChapters.s2?.length > 0 && (
-                <>
-                  <p className="semester-label" style={{ marginTop: groupedChapters.s1?.length > 0 ? "0.75rem" : 0 }}>Semestre 2</p>
-                  {groupedChapters.s2.map((ch) => (
-                    <button
-                      key={`s2-${normalizeValue(rawSubject)}-${ch.name}`}
-                      type="button"
-                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s2" ? "chapter-item active" : "chapter-item"}
-                      onClick={() => { setSelectedChapter({ ...ch, semester: "s2" }); setSelectedPdfIndex(0); setChatOpen(false); }}
-                    >
-                      <FileText size={14} />
-                      <span>{ch.name}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-            </div>
+          <EditableChapterSidebar
+            specialty={specialty}
+            rawSubject={rawSubject}
+            groupedChapters={groupedChapters}
+            selectedChapter={selectedChapter}
+            onSelectChapter={(ch) => { setSelectedChapter(ch); setSelectedPdfIndex(0); setChatOpen(false); }}
+            onChaptersChanged={() => setRefreshKey((k) => k + 1)}
+          >
             <button
               className="goto-exercises-btn"
               type="button"
@@ -194,7 +221,7 @@ export default function CoursePage() {
             >
               Passez aux exercices <ArrowRight size={16} />
             </button>
-          </aside>
+          </EditableChapterSidebar>
 
           {/* Resize handle */}
           <div className="chapter-resize-handle" onMouseDown={handleResizeMouseDown} />
@@ -211,22 +238,37 @@ export default function CoursePage() {
               transition={{ duration: 0.25 }}
             >
               <div className="pdf-viewer-area">
-                {pdfList.length > 1 && (
-                  <div className="pdf-tabs">
-                    {pdfList.map((pdf, i) => (
-                      <button
-                        key={pdf.id}
-                        type="button"
-                        className={selectedPdfIndex === i ? "pdf-tab active" : "pdf-tab"}
-                        onClick={() => setSelectedPdfIndex(i)}
-                        title={pdf.filename}
-                      >
-                        <FileText size={13} />
-                        Partie {i + 1}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="pdf-toolbar">
+                  {pdfList.length > 0 && (
+                    <div className="pdf-tabs">
+                      {pdfList.map((pdf, i) => (
+                        <button
+                          key={pdf.id}
+                          type="button"
+                          className={`pdf-tab${selectedPdfIndex === i ? " active" : ""}${canDelete(pdf) ? " deletable" : ""}`}
+                          onClick={() => setSelectedPdfIndex(i)}
+                          title={pdf.filename}
+                        >
+                          <FileText size={13} />
+                          Partie {i + 1}
+                          {canDelete(pdf) && (
+                            <span
+                              className="pdf-tab-x"
+                              onClick={(e) => { e.stopPropagation(); handleDelete(pdf.id); }}
+                              title="Supprimer"
+                            >
+                              <X size={11} />
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button className="pdf-upload-btn" type="button" onClick={() => fileInputRef.current?.click()}>
+                    <Upload size={14} /> Importer un PDF
+                  </button>
+                  <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleUpload} />
+                </div>
                 {currentPdfUrl ? (
                   <iframe
                     src={currentPdfUrl}
@@ -237,7 +279,7 @@ export default function CoursePage() {
                   <div className="pdf-fallback">
                     <FileText size={32} />
                     <h3>{selectedChapter.name}</h3>
-                    <p>No PDFs uploaded yet for this chapter.</p>
+                    <p>Aucun PDF importé pour ce chapitre.</p>
                   </div>
                 )}
               </div>
@@ -268,7 +310,7 @@ export default function CoursePage() {
             type="button"
           >
             <Sparkles size={22} />
-            <span className="ai-fab-label">Explain with AI</span>
+            <span className="ai-fab-label">Expliquer avec l'IA</span>
           </button>
         )}
       </main>

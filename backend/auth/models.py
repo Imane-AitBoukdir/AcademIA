@@ -69,3 +69,4 @@ class UserOut(BaseModel):
     age: int
     niveauScolaire: str
     specialty: str
+    role: str = "student"

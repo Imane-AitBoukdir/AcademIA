@@ -6,23 +6,28 @@ import {
     LayoutDashboard,
     LogOut,
     Settings,
+    Shield,
     Sparkles,
     UserCircle,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-const items = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", match: "exact" },
-  { icon: BookOpen, label: "Subjects", path: "/pick/courses", match: "/courses" },
-  { icon: Dumbbell, label: "Exercises", path: "/pick/exercises", match: "/exercises" },
-  { icon: GraduationCap, label: "Mock Exams", path: "/pick/mock-exams", match: "/mock-exams" },
+const baseItems = [
+  { icon: LayoutDashboard, label: "Tableau de Bord", path: "/dashboard", match: "exact" },
+  { icon: BookOpen, label: "Matières", path: "/pick/courses", match: "/courses" },
+  { icon: Dumbbell, label: "Exercices", path: "/pick/exercises", match: "/exercises" },
+  { icon: GraduationCap, label: "Examens Blancs", path: "/pick/mock-exams", match: "/mock-exams" },
   { icon: Bot, label: "Prof IA", path: "/prof-ai", match: "/prof-ai" },
   { icon: UserCircle, label: "Profil", path: "/profil", match: "/profil" },
-  { icon: Settings, label: "Settings", path: "/settings", match: "/settings" },
+  { icon: Settings, label: "Paramètres", path: "/settings", match: "/settings" },
 ];
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
+  const user = JSON.parse(localStorage.getItem("academiaUser") || "{}");
+  const items = user.role === "admin"
+    ? [...baseItems, { icon: Shield, label: "Administration", path: "/admin", match: "/admin" }]
+    : baseItems;
 
   return (
     <>
@@ -64,7 +69,7 @@ export default function Sidebar({ open, onClose }) {
             <span className="sidebar-item-icon">
               <LogOut size={18} />
             </span>
-            <span>Log out</span>
+            <span>Déconnexion</span>
           </Link>
         </div>
       </aside>

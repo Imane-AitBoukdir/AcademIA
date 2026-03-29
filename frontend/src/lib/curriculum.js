@@ -8,6 +8,7 @@ export {
     getChaptersForSubject,
     getDefaultSpecialty,
     getSchoolLevels,
+    getSchoolLevelsWithLabels,
     getSpecialtiesForSchoolLevel,
     getSpecialtyById,
     getSubjectLanguage,
@@ -17,6 +18,9 @@ export {
 
 // ── Kept for backward compat in DashboardPage / SubjectPickerPage ───────────
 export { getSubjectsBySpecialty as getSubjectsByLevel } from "../data/curriculum_data";
+
+// ── Load curriculum from API (call once at app startup) ─────────────────────
+export { loadCurriculum, reloadCurriculum } from "../data/curriculum_data";
 
 export function normalizeValue(value = "") {
   return value
@@ -80,9 +84,72 @@ export async function fetchChapterPdfs(pdfType, specialty, subject, semester, ch
 }
 
 /**
+ * Fetch all PDFs for a subject across all semesters/chapters (used for mock exams).
+ * Returns [{ id, filename, uploadDate, chapter, semester }]
+ */
+export async function fetchSubjectPdfs(pdfType, specialty, subject) {
+  const s = normalizeValue(subject);
+  const res = await fetch(`${API_URL}/api/pdfs/${pdfType}/${specialty}/${s}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+/**
  * Get the URL to stream a single PDF by its GridFS file ID.
  */
 export function getPdfUrl(fileId) {
   return `${API_URL}/api/pdfs/file/${fileId}`;
+}
+
+/**
+ * Upload a user PDF to GridFS.
+ * Returns { id, filename } on success.
+ */
+export async function uploadPdf(file, pdfType, specialty, subject, semester, chapter) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("pdf_type", pdfType);
+  fd.append("specialty", specialty);
+  fd.append("subject", normalizeValue(subject));
+  fd.append("semester", semester);
+  fd.append("chapter", normalizeValue(chapter));
+  try {
+    const user = JSON.parse(localStorage.getItem("academiaUser") || "{}");
+    if (user.email) fd.append("uploaded_by", user.email);
+  } catch { /* ignore */ }
+  const res = await fetch(`${API_URL}/api/pdfs/upload`, { method: "POST", body: fd });
+  if (!res.ok) throw new Error("Upload failed");
+  return res.json();
+}
+
+/**
+ * Delete a PDF from GridFS by its file ID.
+ */
+export async function deletePdf(fileId) {
+  const res = await fetch(`${API_URL}/api/pdfs/file/${encodeURIComponent(fileId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Delete failed");
+}
+
+/**
+ * Generate a mock exam via Gemini → LaTeX → PDF.
+ * Returns { id, filename } on success.
+ */
+export async function generateExam(specialty, subject, chapters, language, coursePdfId, examPdfId) {
+  const fd = new FormData();
+  fd.append("subject", normalizeValue(subject));
+  fd.append("level", specialty);
+  fd.append("specialty", specialty);
+  fd.append("chapters", chapters.join(", "));
+  fd.append("language", language || "fr");
+  if (coursePdfId) fd.append("course_pdf_id", coursePdfId);
+  if (examPdfId) fd.append("exam_pdf_id", examPdfId);
+  const res = await fetch(`${API_URL}/api/generate-exam`, { method: "POST", body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Exam generation failed");
+  }
+  return res.json();
 }
 

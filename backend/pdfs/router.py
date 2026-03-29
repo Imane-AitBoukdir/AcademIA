@@ -7,7 +7,7 @@ FastAPI APIRouter for PDF endpoints.
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 
-from .service import list_chapter_pdfs, stream_pdf, store_pdf
+from .service import list_chapter_pdfs, list_subject_pdfs, stream_pdf, store_pdf, delete_pdf
 
 router = APIRouter(prefix="/api/pdfs", tags=["pdfs"])
 
@@ -26,6 +26,22 @@ def _validate_path_params(pdf_type: str, semester: str) -> None:
             status_code=400,
             detail=f"Invalid semester. Must be one of: {', '.join(sorted(_VALID_SEMESTERS))}",
         )
+
+
+# ── List all PDFs for a subject (any semester/chapter) ──────────────────────
+
+@router.get("/{pdf_type}/{specialty}/{subject}", response_model=None)
+async def list_subject_pdfs_route(
+    pdf_type: str,
+    specialty: str,
+    subject: str,
+):
+    if pdf_type not in _VALID_PDF_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid pdf_type. Must be one of: {', '.join(sorted(_VALID_PDF_TYPES))}",
+        )
+    return await list_subject_pdfs(pdf_type, specialty, subject)
 
 
 # ── List PDFs for a chapter ──────────────────────────────────────────────────
@@ -74,6 +90,7 @@ async def upload_pdf(
     subject: str = Form(...),
     semester: str = Form(...),
     chapter: str = Form(...),
+    uploaded_by: str = Form(""),
 ):
     _validate_path_params(pdf_type, semester)
 
@@ -92,5 +109,14 @@ async def upload_pdf(
         subject=subject,
         semester=semester,
         chapter=chapter,
+        uploaded_by=uploaded_by,
     )
     return {"id": file_id, "filename": file.filename}
+
+
+# ── Delete a PDF ──────────────────────────────────────────────────────────────
+
+@router.delete("/file/{file_id}", status_code=204)
+async def delete_pdf_route(file_id: str):
+    await delete_pdf(file_id)
+    return None

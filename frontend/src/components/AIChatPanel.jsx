@@ -385,6 +385,18 @@ export default function AIChatPanel({
 
       const data = await response.json();
 
+      // Safety net: if backend returned raw JSON string, extract display_text
+      let aiText = data.text;
+      if (typeof aiText === "string" && aiText.trimStart().startsWith("{") && aiText.includes("display_text")) {
+        try {
+          const parsed = JSON.parse(aiText);
+          if (parsed.display_text) aiText = parsed.display_text;
+        } catch {
+          const m = aiText.match(/"display_text"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+          if (m) aiText = m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+        }
+      }
+
       // Store session ID from first response
       if (data.session_id) {
         setSessionId(data.session_id);
@@ -406,7 +418,7 @@ export default function AIChatPanel({
             .catch((e) => console.error("Autoplay blocked:", e));
           setMessages((prev) => [
             ...prev,
-            { role: "ai", text: data.text, isNew: true },
+            { role: "ai", text: aiText, isNew: true },
           ]);
           audioRef.current.oncanplaythrough = null;
         };
@@ -421,7 +433,7 @@ export default function AIChatPanel({
         setCurrentAudioDuration(0);
         setMessages((prev) => [
           ...prev,
-          { role: "ai", text: data.text, isNew: true },
+          { role: "ai", text: aiText, isNew: true },
         ]);
       }
     } catch (error) {
