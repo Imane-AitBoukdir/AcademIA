@@ -1,26 +1,33 @@
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const existing = JSON.parse(localStorage.getItem("academiaUser") || "null");
-    const fallbackUser = {
-      nom: "Etudiant",
-      prenom: "Nour",
-      niveauScolaire: "primaire",
-      telParent: "",
-      emailParent: email,
-      age: "11",
-      password,
-    };
-    localStorage.setItem("academiaUser", JSON.stringify(existing || fallbackUser));
-    navigate("/dashboard");
+    setError("");
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.detail || "Sign in failed.");
+        return;
+      }
+      const user = await res.json();
+      localStorage.setItem("academiaUser", JSON.stringify(user));
+      navigate("/dashboard");
+    } catch {
+      setError("Cannot reach server. Please try again.");
+    }
   };
 
   return (
@@ -35,6 +42,7 @@ export default function SignInPage() {
         <div className="auth-header">
           <h1>Welcome back</h1>
           <p>Sign in to continue learning.</p>
+          {error && <p style={{ color: "#e53e3e", marginTop: 8 }}>{error}</p>}
         </div>
 
         <div className="form-grid">

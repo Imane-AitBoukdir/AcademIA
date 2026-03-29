@@ -1,40 +1,58 @@
 import { motion } from "framer-motion";
 import { CheckCircle, ChevronRight, FileText, Menu } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
 import {
+    fetchChapterPdfs,
     formatSubjectName,
     getChaptersForSubject,
+    getPdfUrl,
     normalizeValue,
 } from "../lib/curriculum";
-
-function getPdfPath(level, subject, chapter, type) {
-  const s = normalizeValue(subject);
-  const c = normalizeValue(chapter);
-  return `/pdfs/${level}/${s}/${c}/${type}.pdf`;
-}
 
 export default function ExercicePage() {
   const params = useParams();
   const location = useLocation();
 
-  const level = params.level || location.state?.level || "6eme_annee_primaire";
+  const specialty = params.specialty || location.state?.specialty || "6eme_annee_primaire";
   const rawSubject = decodeURIComponent(
     params.subject || location.state?.subjectName || "Mathematiques",
   );
 
-  const chapters = useMemo(
-    () => getChaptersForSubject(level, rawSubject),
-    [level, rawSubject],
+  const groupedChapters = useMemo(
+    () => getChaptersForSubject(specialty, rawSubject),
+    [specialty, rawSubject],
   );
-  const [selectedChapter, setSelectedChapter] = useState(chapters[0] || "");
+  const [selectedChapter, setSelectedChapter] = useState(() => {
+    const d = getChaptersForSubject(specialty, rawSubject);
+    const fromState = location.state;
+    if (fromState?.chapter && fromState?.semester) {
+      const pool = d[fromState.semester] || [];
+      const match = pool.find((ch) => ch.name === fromState.chapter);
+      if (match) return { ...match, semester: fromState.semester };
+    }
+    const first = d.s1?.[0] || d.s2?.[0];
+    const sem = d.s1?.length > 0 ? "s1" : "s2";
+    return first ? { ...first, semester: sem } : { name: "", semester: "s1" };
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [exercisePdfs, setExercisePdfs] = useState([]);
+  const [coursePdfs, setCoursePdfs] = useState([]);
 
-  const coursePdfPath = getPdfPath(level, rawSubject, selectedChapter, "course");
-  const exercisePdfPath = getPdfPath(level, rawSubject, selectedChapter, "exercice");
+  useEffect(() => {
+    let cancelled = false;
+    fetchChapterPdfs("exercices", specialty, rawSubject, selectedChapter.semester, selectedChapter.name)
+      .then((list) => { if (!cancelled) setExercisePdfs(list); });
+    fetchChapterPdfs("courses", specialty, rawSubject, selectedChapter.semester, selectedChapter.name)
+      .then((list) => { if (!cancelled) setCoursePdfs(list); });
+    return () => { cancelled = true; };
+  }, [specialty, rawSubject, selectedChapter.name, selectedChapter.semester]);
+
+  const exercisePdfUrl = exercisePdfs[0] ? getPdfUrl(exercisePdfs[0].id) : null;
+  const coursePdfUrl = coursePdfs[0] ? getPdfUrl(coursePdfs[0].id) : null;
 
   return (
     <div className="dashboard-layout">
@@ -56,70 +74,83 @@ export default function ExercicePage() {
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
             <ChevronRight size={14} />
-            <span>{selectedChapter}</span>
+            <span>{selectedChapter.name}</span>
           </div>
-          <p className="course-level-badge">{level.replaceAll("_", " ")}</p>
+          <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
         </header>
 
         <div className="course-body">
           <aside className="chapter-sidebar">
             <h2>Chapters</h2>
             <div className="chapter-list">
-              {chapters.map((ch) => (
-                <button
-                  key={`ex-${normalizeValue(rawSubject)}-${ch}`}
-                  type="button"
-                  className={
-                    selectedChapter === ch
-                      ? "chapter-item active"
-                      : "chapter-item"
-                  }
-                  onClick={() => {
-                    setSelectedChapter(ch);
-                    setChatOpen(false);
-                  }}
-                >
-                  <FileText size={14} />
-                  <span>{ch}</span>
-                </button>
-              ))}
+              {groupedChapters.s1?.length > 0 && (
+                <>
+                  <p className="semester-label">Semestre 1</p>
+                  {groupedChapters.s1.map((ch) => (
+                    <button
+                      key={`ex-s1-${normalizeValue(rawSubject)}-${ch.name}`}
+                      type="button"
+                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s1" ? "chapter-item active" : "chapter-item"}
+                      onClick={() => { setSelectedChapter({ ...ch, semester: "s1" }); setChatOpen(false); }}
+                    >
+                      <FileText size={14} />
+                      <span>{ch.name}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+              {groupedChapters.s2?.length > 0 && (
+                <>
+                  <p className="semester-label" style={{ marginTop: groupedChapters.s1?.length > 0 ? "0.75rem" : 0 }}>Semestre 2</p>
+                  {groupedChapters.s2.map((ch) => (
+                    <button
+                      key={`ex-s2-${normalizeValue(rawSubject)}-${ch.name}`}
+                      type="button"
+                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s2" ? "chapter-item active" : "chapter-item"}
+                      onClick={() => { setSelectedChapter({ ...ch, semester: "s2" }); setChatOpen(false); }}
+                    >
+                      <FileText size={14} />
+                      <span>{ch.name}</span>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           </aside>
 
           <div className={chatOpen ? "split-view" : "chapter-content-wrapper"}>
             <motion.section
               className="chapter-content"
-              key={selectedChapter}
+              key={selectedChapter.name + selectedChapter.semester}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
             >
               <div className="pdf-viewer-area">
-                <iframe
-                  src={exercisePdfPath}
-                  title={`Exercise: ${selectedChapter}`}
-                  className="pdf-iframe"
-                />
-                <div className="pdf-fallback">
-                  <FileText size={32} />
-                  <h3>Exercises — {selectedChapter}</h3>
-                  <p>
-                    PDF not found. Place the exercise PDF at:
-                    <br />
-                    <code>{exercisePdfPath}</code>
-                  </p>
-                </div>
+                {exercisePdfUrl ? (
+                  <iframe
+                    src={exercisePdfUrl}
+                    title={`Exercise: ${selectedChapter.name}`}
+                    className="pdf-iframe"
+                  />
+                ) : (
+                  <div className="pdf-fallback">
+                    <FileText size={32} />
+                    <h3>Exercises — {selectedChapter.name}</h3>
+                    <p>No exercise PDFs uploaded yet for this chapter.</p>
+                  </div>
+                )}
               </div>
             </motion.section>
 
             {chatOpen && (
               <AIChatPanel
                 mode="exercise"
-                level={level}
+                level={specialty}
                 subject={rawSubject}
-                chapter={selectedChapter}
-                referencePdfPath={coursePdfPath}
-                exercisePdfPath={exercisePdfPath}
+                chapter={selectedChapter.name}
+                referencePdfPath={coursePdfUrl}
+                exercisePdfPath={exercisePdfUrl}
                 onClose={() => setChatOpen(false)}
               />
             )}

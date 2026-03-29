@@ -27,9 +27,9 @@ export default function App() {
 			<Route path="/signup" element={<PublicLayout><SignUpPage /></PublicLayout>} />
 			<Route path="/dashboard" element={<DashboardPage />} />
 			<Route path="/pick/:mode" element={<SubjectPickerPage />} />
-			<Route path="/courses/:level/:subject" element={<CoursePage />} />
-			<Route path="/exercises/:level/:subject" element={<ExercicePage />} />
-			<Route path="/mock-exams/:level/:subject" element={<MockExamsPage />} />
+			<Route path="/courses/:specialty/:subject" element={<CoursePage />} />
+			<Route path="/exercises/:specialty/:subject" element={<ExercicePage />} />
+			<Route path="/mock-exams/:specialty/:subject" element={<MockExamsPage />} />
 			<Route path="/prof-ai" element={<ProfAIPage />} />
 			<Route path="/profil" element={<DashboardPage />} />
 			<Route path="/settings" element={<DashboardPage />} />

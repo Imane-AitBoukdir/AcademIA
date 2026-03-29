@@ -3,17 +3,18 @@ import { GraduationCap, Menu } from "lucide-react";
 import { useState } from "react";
 import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
+import { getDefaultSpecialty } from "../lib/curriculum";
 
 export default function ProfAIPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  /* Read level from stored user profile */
-  let level = "";
+  /* Read specialty from stored user profile */
+  let specialty = "";
   try {
     const raw = localStorage.getItem("academiaUser");
     if (raw) {
       const u = JSON.parse(raw);
-      level = u.niveauScolaire || "";
+      specialty = getDefaultSpecialty(u);
     }
   } catch {
     /* ignore */
@@ -38,8 +39,8 @@ export default function ProfAIPage() {
               Prof IA
             </h1>
           </div>
-          {level && (
-            <p className="course-level-badge">{level.replaceAll("_", " ")}</p>
+          {specialty && (
+            <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
           )}
         </header>
 
@@ -49,7 +50,7 @@ export default function ProfAIPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          <AIChatPanel mode="general" level={level} fullWidth />
+          <AIChatPanel mode="general" level={specialty} fullWidth />
         </motion.div>
       </main>
     </div>

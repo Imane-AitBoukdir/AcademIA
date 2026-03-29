@@ -1,6 +1,6 @@
 import "katex/dist/katex.min.css";
-import { Bot, Mic, Paperclip, Send, Volume2, VolumeX, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Bot, MessageSquarePlus, Mic, Paperclip, Plus, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
@@ -62,8 +62,35 @@ export default function AIChatPanel({
   exercisePdfPath = "",
   onClose,
   fullWidth = false,
+  chapterKey = "",
 }) {
-  const [messages, setMessages] = useState([]);
+  /* ── localStorage helpers ── */
+  const storageKey = chapterKey ? `chat_${chapterKey}` : null;
+
+  const loadConversations = useCallback(() => {
+    if (!storageKey) return [];
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }, [storageKey]);
+
+  const saveConversations = useCallback((convs) => {
+    if (!storageKey) return;
+    const trimmed = convs.slice(-20);
+    localStorage.setItem(storageKey, JSON.stringify(trimmed));
+  }, [storageKey]);
+
+  const [conversations, setConversations] = useState(() => loadConversations());
+  const [activeConvId, setActiveConvId] = useState(() => {
+    const convs = loadConversations();
+    return convs.length > 0 ? convs[convs.length - 1].id : null;
+  });
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+
+  const activeConv = conversations.find((c) => c.id === activeConvId) || null;
+
+  const [messages, setMessages] = useState(activeConv?.messages || []);
   const [inputText, setInputText] = useState("");
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -74,7 +101,7 @@ export default function AIChatPanel({
   const [confirmedTranscript, setConfirmedTranscript] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState(activeConv?.sessionId || null);
   const [referenceSent, setReferenceSent] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -86,6 +113,78 @@ export default function AIChatPanel({
   const stopRequestedRef = useRef(false);
   const transcriptRef = useRef("");
   const chatEndRef = useRef(null);
+
+  /* ── Persist conversations after each AI response ── */
+  useEffect(() => {
+    if (!storageKey || messages.length === 0) return;
+    setConversations((prev) => {
+      let updated;
+      if (activeConvId) {
+        const exists = prev.find((c) => c.id === activeConvId);
+        if (exists) {
+          updated = prev.map((c) =>
+            c.id === activeConvId ? { ...c, messages, sessionId } : c,
+          );
+        } else {
+          const title = messages.find((m) => m.role === "user")?.text?.slice(0, 40) || "New chat";
+          updated = [...prev, { id: activeConvId, title, messages, sessionId }];
+        }
+      } else {
+        const newId = Date.now().toString();
+        const title = messages.find((m) => m.role === "user")?.text?.slice(0, 40) || "New chat";
+        updated = [...prev, { id: newId, title, messages, sessionId }];
+        setActiveConvId(newId);
+      }
+      saveConversations(updated);
+      return updated;
+    });
+  }, [messages.length]);
+
+  /* ── Reload when chapterKey changes ── */
+  useEffect(() => {
+    const convs = loadConversations();
+    setConversations(convs);
+    const last = convs.length > 0 ? convs[convs.length - 1] : null;
+    setActiveConvId(last?.id || null);
+    setMessages(last?.messages || []);
+    setSessionId(last?.sessionId || null);
+    setReferenceSent(false);
+  }, [storageKey]);
+
+  /* ── Switch conversation ── */
+  const switchConversation = (id) => {
+    const conv = conversations.find((c) => c.id === id);
+    if (conv) {
+      setActiveConvId(id);
+      setMessages(conv.messages);
+      setSessionId(conv.sessionId || null);
+      setReferenceSent(false);
+    }
+    setSessionsOpen(false);
+  };
+
+  const startNewChat = () => {
+    setActiveConvId(null);
+    setMessages([]);
+    setSessionId(null);
+    setReferenceSent(false);
+    setSessionsOpen(false);
+  };
+
+  const deleteConversation = (id, e) => {
+    e.stopPropagation();
+    setConversations((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      saveConversations(updated);
+      if (id === activeConvId) {
+        const last = updated[updated.length - 1];
+        setActiveConvId(last?.id || null);
+        setMessages(last?.messages || []);
+        setSessionId(last?.sessionId || null);
+      }
+      return updated;
+    });
+  };
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -372,6 +471,43 @@ export default function AIChatPanel({
             <Bot size={16} />
             {modeLabels[mode] || "AI Assistant"}
           </span>
+          {storageKey && (
+            <div className="aichat-sessions-wrap">
+              <button
+                className="aichat-sessions-trigger"
+                title="Chat history"
+                onClick={() => setSessionsOpen((v) => !v)}
+              >
+                <MessageSquarePlus size={15} />
+              </button>
+              {sessionsOpen && (
+                <div className="aichat-sessions-dropdown">
+                  <button className="aichat-new-chat-btn" onClick={startNewChat}>
+                    <Plus size={14} /> New Chat
+                  </button>
+                  {conversations.slice().reverse().map((c) => (
+                    <div
+                      key={c.id}
+                      className={`aichat-session-item${c.id === activeConvId ? " active" : ""}`}
+                      onClick={() => switchConversation(c.id)}
+                    >
+                      <span className="aichat-session-title">{c.title}</span>
+                      <button
+                        className="aichat-session-delete"
+                        onClick={(e) => deleteConversation(c.id, e)}
+                        title="Delete"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  {conversations.length === 0 && (
+                    <p className="aichat-sessions-empty">No saved chats</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="aichat-header-right">
           <button

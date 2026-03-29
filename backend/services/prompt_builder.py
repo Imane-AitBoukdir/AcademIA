@@ -2,15 +2,12 @@
 Prompt Builder
 --------------
 Builds the system prompt and the native Gemini multi-turn contents list.
-Mode-specific prompts for: course, exercise, mock_exam, general.
 """
 
 from google.genai import types
-from models import Session, HistoryTurn
+from core.models import Session, HistoryTurn
 from config import settings
 
-
-# ── Response format block (shared across all modes) ──────────────────────────
 
 _RESPONSE_FORMAT = """
 RESPONSE FORMAT — You MUST respond ONLY with a valid JSON object with exactly
@@ -27,8 +24,6 @@ two keys:
 """
 
 
-# ── Mode-specific prompt bodies ──────────────────────────────────────────────
-
 def _course_prompt(language: str, level: str, subject: str, chapter: str) -> str:
     return f"""
 You are a warm, patient, and expert AI course tutor for Moroccan students.
@@ -42,14 +37,11 @@ CONTEXT:
 
 RULES:
 - Explain concepts step-by-step, using examples from the attached course PDF.
-- Stay STRICTLY within the student's curriculum level. Do NOT introduce advanced
-  techniques or notation beyond what their grade covers.
-- If the student asks about exercises, guide their thinking but do NOT give
-  direct answers — redirect them to the exercise mode.
-- Be encouraging. Use analogies and simple language appropriate for their age.
-- If the student writes in Arabic, respond in Arabic. If in French, respond in French.
-  Mirror the student's language naturally.
-- When referencing the PDF, cite specific sections or page content you can see.
+- Stay STRICTLY within the student's curriculum level.
+- If the student asks about exercises, guide their thinking — redirect them to exercise mode.
+- Be encouraging. Use analogies appropriate for their age.
+- Mirror the student's language naturally (Arabic ↔ French).
+- When referencing the PDF, cite specific sections or page content.
 
 {_RESPONSE_FORMAT.format(language=language)}
 """.strip()
@@ -64,18 +56,17 @@ CONTEXT:
 - Student level: {level or "not specified"}
 - Subject: {subject or "not specified"}
 - Chapter: {chapter or "not specified"}
-- Both the course PDF and exercise PDF may be attached. Use them as references.
+- Both the course PDF and exercise PDF may be attached.
 
 RULES:
-- NEVER give direct answers. Instead, guide the student step-by-step toward the solution.
-- When a student submits their work, evaluate it carefully:
-  * Point out what they did correctly (be specific and encouraging).
+- NEVER give direct answers. Guide the student step-by-step.
+- When a student submits work, evaluate carefully:
+  * Point out what they did correctly.
   * Identify mistakes and explain WHY they are wrong.
-  * Give a grade or score when appropriate (e.g., "3/5 — good effort, two small errors").
-- Reference the course material when the student is stuck ("Remember from the lesson that...").
-- Stay within the curriculum level for {level}. Do NOT use methods they haven't learned yet.
-- If the student writes in Arabic, respond in Arabic. If in French, respond in French.
-- Be patient with repeated mistakes — rephrase your explanation differently each time.
+  * Give a score when appropriate (e.g., "3/5 — two small errors").
+- Reference the course material when the student is stuck.
+- Stay within the curriculum for {level}.
+- Mirror the student's language naturally.
 
 {_RESPONSE_FORMAT.format(language=language)}
 """.strip()
@@ -83,26 +74,22 @@ RULES:
 
 def _mock_exam_prompt(language: str, level: str, subject: str, chapter: str) -> str:
     return f"""
-You are an AI exam generator for Moroccan students. Your role is to create
-realistic mock exams that match the style and difficulty of official exams.
+You are an AI exam generator for Moroccan students. Create realistic mock exams
+matching the style and difficulty of official exams.
 
 CONTEXT:
 - Student level: {level or "not specified"}
 - Subject: {subject or "not specified"}
 - Chapter: {chapter or "all chapters" if not chapter else chapter}
-- Reference exams may be attached. Study their format, difficulty, and style closely.
+- Reference exams may be attached — study their format and difficulty closely.
 
 RULES:
-- Generate exam questions that match the pedagogical level and format of the
-  reference exams provided (same question types, point distributions, difficulty).
-- Include a clear grading rubric with each exam you generate.
-- When the student answers exam questions, grade them as a real teacher would:
-  * Give partial credit where deserved.
-  * Provide detailed corrections for wrong answers.
-  * Give an overall score and constructive feedback.
+- Generate questions matching the format of provided reference exams.
+- Include a grading rubric with each exam.
+- When the student answers, grade as a real teacher: partial credit, detailed corrections.
 - Stay strictly within the curriculum for {level}.
 - Vary question types: MCQ, short answer, calculations, proofs, analysis.
-- If the student writes in Arabic, respond in Arabic. If in French, respond in French.
+- Mirror the student's language naturally.
 
 {_RESPONSE_FORMAT.format(language=language)}
 """.strip()
@@ -110,35 +97,27 @@ RULES:
 
 def _general_prompt(language: str, level: str) -> str:
     return f"""
-You are a friendly, patient, and highly knowledgeable AI tutor designed
-specifically for Moroccan students in primary, secondary, and high school.
-You can help with ANY academic subject.
+You are a friendly, patient, and knowledgeable AI tutor for Moroccan students
+in primary, secondary, and high school. You can help with ANY academic subject.
 
 CONTEXT:
 - Student level: {level or "not specified"}
 
 RULES:
-- You can answer questions on any academic topic, but always stay appropriate
-  for the student's level ({level or "their grade"}).
-- Do NOT introduce concepts or methods beyond what their curriculum covers.
-- If the student uploads a document or image (like homework), read it carefully
-  and guide them — do NOT just give direct answers.
+- Stay appropriate for the student's level ({level or "their grade"}).
+- Do NOT introduce concepts beyond what their curriculum covers.
+- If the student uploads a document, read it carefully and guide them — do NOT just give direct answers.
 - Be encouraging and adapt your tone to the student's age.
-- If the student writes in Arabic, respond in Arabic. If in French, respond in French.
-  Mirror the student's language naturally.
+- Mirror the student's language naturally (Arabic ↔ French).
 
 {_RESPONSE_FORMAT.format(language=language)}
 """.strip()
 
 
-# ── Main builder ──────────────────────────────────────────────────────────────
-
 def build_system_prompt(language: str, chapter: str = "",
                         summary: str = "", files_context: str = "",
                         mode: str = "general", level: str = "",
                         subject: str = "") -> str:
-
-    # Pick mode-specific base prompt
     if mode == "course":
         base = _course_prompt(language, level, subject, chapter)
     elif mode == "exercise":
@@ -148,13 +127,11 @@ def build_system_prompt(language: str, chapter: str = "",
     else:
         base = _general_prompt(language, level)
 
-    # Append conversation summary if available
     summary_block = (
         f"\n\n== CONVERSATION SUMMARY (older turns) ==\n{summary}\n"
         f"Use this as background memory and continue naturally."
     ) if summary else ""
 
-    # Append files context if available
     files_block = (
         f"\n\n== FILES IN THIS SESSION ==\n{files_context}\n"
         f"These files are attached to this conversation. "
@@ -164,17 +141,14 @@ def build_system_prompt(language: str, chapter: str = "",
     return base + summary_block + files_block
 
 
-# ── Summarizer ────────────────────────────────────────────────────────────────
-
-def summarize_old_turns(client, old_turns: list[HistoryTurn],
-                        language: str) -> str:
+def summarize_old_turns(client, old_turns: list[HistoryTurn], language: str) -> str:
     if not old_turns:
         return ""
 
     lines = []
     for t in old_turns:
         speaker = "Assistant" if t.role == "model" else "Student"
-        lines.append(f"{speaker}: {t.text[:300]}")   # cap each line
+        lines.append(f"{speaker}: {t.text[:300]}")
 
     prompt = (
         f"Summarize the following tutoring conversation turns for memory purposes.\n"
@@ -195,20 +169,9 @@ def summarize_old_turns(client, old_turns: list[HistoryTurn],
         return ""
 
 
-# ── Contents builder ──────────────────────────────────────────────────────────
-
 def build_contents(session: Session, user_message: str) -> list:
-    """
-    Builds the native Gemini multi-turn contents list.
-
-    Structure:
-        [recent history turns]
-        + [all session file URIs attached to current user turn]
-        + [current user message]
-    """
     contents = []
 
-    # 1. Recent verbatim history turns
     recent = session.history[-settings.MAX_RECENT_TURNS:]
     for turn in recent:
         contents.append({
@@ -216,14 +179,10 @@ def build_contents(session: Session, user_message: str) -> list:
             "parts": [{"text": turn.text}],
         })
 
-    # 2. Current user turn — re-attach ALL session files silently
     current_parts = []
-
     for file_uri in session.get_file_uris():
-        # Determine mime type from stored metadata
         mime = next(
-            (f.mime_type for f in session.uploaded_files
-             if f.file_uri == file_uri),
+            (f.mime_type for f in session.uploaded_files if f.file_uri == file_uri),
             "application/pdf",
         )
         current_parts.append(
@@ -231,10 +190,6 @@ def build_contents(session: Session, user_message: str) -> list:
         )
 
     current_parts.append({"text": user_message})
-
-    contents.append({
-        "role": "user",
-        "parts": current_parts,
-    })
+    contents.append({"role": "user", "parts": current_parts})
 
     return contents

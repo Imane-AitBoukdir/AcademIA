@@ -17,8 +17,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     formatSubjectName,
-    getLevelOptions,
-    getSubjectsByLevel,
+    getDefaultSpecialty,
+    getSubjectsBySpecialty,
 } from "../lib/curriculum";
 
 const accents = ["mint", "peach", "lavender", "primary", "sky", "sunshine"];
@@ -72,18 +72,14 @@ export default function SubjectPickerPage() {
   const user = getUser();
   const navigate = useNavigate();
 
-  const defaultLevel =
-    user.niveauScolaire === "college"
-      ? "1ere_annee_college"
-      : "6eme_annee_primaire";
+  const defaultSpecialty = getDefaultSpecialty(user);
 
-  const [selectedLevel, setSelectedLevel] = useState(defaultLevel);
+  const [selectedSpecialty, setSelectedSpecialty] = useState(defaultSpecialty);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const subjects = useMemo(
-    () => getSubjectsByLevel(selectedLevel),
-    [selectedLevel],
+    () => getSubjectsBySpecialty(selectedSpecialty),
+    [selectedSpecialty],
   );
-  const levels = getLevelOptions();
 
   return (
     <div className="dashboard-layout">
@@ -153,11 +149,11 @@ export default function SubjectPickerPage() {
                       type="button"
                       onClick={() =>
                         navigate(
-                          `${config.routePrefix}/${selectedLevel}/${subject}`,
+                          `${config.routePrefix}/${selectedSpecialty}/${subject}`,
                           {
                             state: {
                               subjectName: subject,
-                              level: selectedLevel,
+                              specialty: selectedSpecialty,
                             },
                           },
                         )

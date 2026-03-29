@@ -26,6 +26,10 @@ class Settings:
     MAX_RECENT_TURNS: int   = 8     # full verbatim turns kept
     SESSION_TTL_SECONDS: int = 3600 # 1 hour session expiry
 
+    # MongoDB
+    MONGODB_URI: str        = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    MONGODB_DB: str         = os.getenv("MONGODB_DB", "academia")
+
     # File config
     MAX_FILE_SIZE_MB: int   = 50
     ALLOWED_MIME_TYPES: list = [

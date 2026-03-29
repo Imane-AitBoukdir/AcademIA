@@ -1,13 +1,15 @@
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { lyceeSpecialties } from "../lib/curriculum";
 
 const initialForm = {
   nom: "",
   prenom: "",
   niveauScolaire: "primaire",
-  telParent: "",
-  emailParent: "",
+  specialty: "",
+  tel: "",
+  email: "",
   age: "",
   password: "",
 };
@@ -16,15 +18,40 @@ export default function SignUpPage() {
   const [form, setForm] = useState(initialForm);
   const navigate = useNavigate();
 
+  const [error, setError] = useState("");
+
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      // Reset specialty when switching away from lycee
+      if (name === "niveauScolaire" && value !== "lycee") {
+        next.specialty = "";
+      }
+      return next;
+    });
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem("academiaUser", JSON.stringify(form));
-    navigate("/dashboard");
+    setError("");
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.detail || "Signup failed.");
+        return;
+      }
+      const user = await res.json();
+      localStorage.setItem("academiaUser", JSON.stringify(user));
+      navigate("/dashboard");
+    } catch {
+      setError("Cannot reach server. Please try again.");
+    }
   };
 
   return (
@@ -39,6 +66,7 @@ export default function SignUpPage() {
         <div className="auth-header">
           <h1>Create your account</h1>
           <p>Start learning with AcademIA today.</p>
+          {error && <p style={{ color: "#e53e3e", marginTop: 8 }}>{error}</p>}
         </div>
 
         <div className="form-grid form-two-cols">
@@ -80,8 +108,30 @@ export default function SignUpPage() {
             >
               <option value="primaire">Primaire</option>
               <option value="college">Collège</option>
+              <option value="lycee">Lycée</option>
             </select>
           </div>
+
+          {form.niveauScolaire === "lycee" && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="specialty">Stream / Filière</label>
+              <select
+                id="specialty"
+                className="form-input"
+                required
+                name="specialty"
+                value={form.specialty}
+                onChange={onChange}
+              >
+                <option value="">— Select your stream —</option>
+                {lyceeSpecialties.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label} — {s.labelAr}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label" htmlFor="age">Age</label>
@@ -100,29 +150,30 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="telParent">Parent phone</label>
+            <label className="form-label" htmlFor="tel">Phone</label>
             <input
-              id="telParent"
+              id="tel"
               className="form-input"
               required
-              name="telParent"
-              value={form.telParent}
+              type="tel"
+              name="tel"
+              value={form.tel}
               onChange={onChange}
               placeholder="06XXXXXXXX"
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="emailParent">Parent email</label>
+            <label className="form-label" htmlFor="email">Email</label>
             <input
-              id="emailParent"
+              id="email"
               className="form-input"
               required
               type="email"
-              name="emailParent"
-              value={form.emailParent}
+              name="email"
+              value={form.email}
               onChange={onChange}
-              placeholder="parent@email.com"
+              placeholder="you@email.com"
             />
           </div>
 

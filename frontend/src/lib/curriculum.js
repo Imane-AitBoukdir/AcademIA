@@ -1,36 +1,22 @@
-import levelData from "../data/matières_par_année.json";
-import chapterData from "../data/chapitres_matières_6eme_année.json";
+/**
+ * Curriculum helpers — thin re-export layer over curriculum_data.js
+ * plus normalizeValue, formatSubjectName, and buildPdfPath.
+ */
 
-const collegeSubjects = [
-  "Mathematiques",
-  "Francais",
-  "Arabe",
-  "Physique_Chimie",
-  "SVT",
-  "Histoire_Geographie",
-  "Education_islamique",
-  "Anglais",
-];
+export {
+    ALL_SPECIALTIES,
+    getChaptersForSubject,
+    getDefaultSpecialty,
+    getSchoolLevels,
+    getSpecialtiesForSchoolLevel,
+    getSpecialtyById,
+    getSubjectLanguage,
+    getSubjectsBySpecialty,
+    lyceeSpecialties
+} from "../data/curriculum_data";
 
-const collegeChapters = {
-  mathematiques: [
-    "Nombres relatifs",
-    "Puissances et calculs",
-    "Proportionnalité",
-    "Géométrie plane",
-  ],
-  francais: ["Compréhension de texte", "Grammaire", "Conjugaison", "Rédaction"],
-  arabe: ["النصوص", "التراكيب", "الصرف", "التعبير"],
-  physique_chimie: ["Matière", "Mouvement", "Energie", "Réactions chimiques"],
-  svt: ["Cellule", "Reproduction", "Ecosystèmes", "Santé"],
-  histoire_geographie: ["Repères historiques", "Carte et territoire", "Population", "Citoyenneté"],
-  education_islamique: ["القرآن", "العقيدة", "السيرة", "القيم"],
-  anglais: ["Basic communication", "Grammar essentials", "Vocabulary", "Reading"],
-};
-
-const subjectAliases = {
-  activite_scientifique: "sciences_et_technologie",
-};
+// ── Kept for backward compat in DashboardPage / SubjectPickerPage ───────────
+export { getSubjectsBySpecialty as getSubjectsByLevel } from "../data/curriculum_data";
 
 export function normalizeValue(value = "") {
   return value
@@ -41,40 +27,62 @@ export function normalizeValue(value = "") {
     .replace(/\s+/g, "_");
 }
 
-export const primaryLevels = levelData.primary_morocco || [];
-
-export function getLevelOptions() {
-  const primary = primaryLevels.map((item) => item.level);
-  return [...primary, "1ere_annee_college", "2eme_annee_college", "3eme_annee_college"];
-}
-
-export function getSubjectsByLevel(level) {
-  const found = primaryLevels.find((entry) => entry.level === level);
-  if (found) {
-    return found.subjects;
-  }
-  return collegeSubjects;
-}
-
-export function getChaptersForSubject(level, subjectName) {
-  const normalized = normalizeValue(subjectName);
-
-  if (level === chapterData.level) {
-    const key = subjectAliases[normalized] || normalized;
-    const chapters = chapterData.subjects[key];
-    if (chapters?.length) {
-      return chapters;
-    }
-  }
-
-  return collegeChapters[normalized] || [
-    "Introduction",
-    "Notions essentielles",
-    "Exercices guidés",
-    "Révision finale",
-  ];
-}
-
 export function formatSubjectName(subject) {
   return subject.replaceAll("_", " ");
 }
+
+/**
+ * Build the canonical PDF path.
+ *
+ * Convention:
+ *   /pdfs/{type}/{language}/{specialty}/{subject}/{semester}/{lesson}.pdf
+ *
+ * @param {"courses"|"exercices"|"exams"} type
+ * @param {string} specialty   - e.g. "2bac_sm_a", "6eme_annee_primaire"
+ * @param {string} subject     - e.g. "Mathematiques"
+ * @param {string} semester    - e.g. "s1"
+ * @param {string} lesson      - chapter / lesson name
+ */
+/**
+ * @param {string} filename - PDF filename inside the chapter folder (default: "cours.pdf")
+ *   To add more PDFs to a chapter, update its `pdfs` array in curriculum_data.js.
+ *   Path: /pdfs/{type}/{lang}/{specialty}/{subject}/{semester}/{chapter}/{filename}
+ */
+export function buildPdfPath(type, specialty, subject, semester, lesson, filename = "cours.pdf") {
+  const language = subject
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_");
+  const ARABIC = new Set(["arabe", "education_islamique", "histoire_geographie", "philosophie"]);
+  const lang = ARABIC.has(language) ? "ar" : "fr";
+  const s = normalizeValue(subject);
+  const l = normalizeValue(lesson);
+  return `/pdfs/${type}/${lang}/${specialty}/${s}/${semester}/${l}/${filename}`;
+}
+
+// ── API-driven PDF helpers (GridFS) ─────────────────────────────────────────
+
+const API_URL = "http://localhost:8000";
+
+/**
+ * Fetch the list of PDFs for a chapter from the backend (GridFS).
+ * Returns [{ id, filename, uploadDate }]
+ */
+export async function fetchChapterPdfs(pdfType, specialty, subject, semester, chapter) {
+  const s = normalizeValue(subject);
+  const c = normalizeValue(chapter);
+  const res = await fetch(
+    `${API_URL}/api/pdfs/${pdfType}/${specialty}/${s}/${semester}/${c}`
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+/**
+ * Get the URL to stream a single PDF by its GridFS file ID.
+ */
+export function getPdfUrl(fileId) {
+  return `${API_URL}/api/pdfs/file/${fileId}`;
+}
+

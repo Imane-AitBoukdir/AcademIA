@@ -21,8 +21,10 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     formatSubjectName,
-    getLevelOptions,
-    getSubjectsByLevel,
+    getDefaultSpecialty,
+    getSpecialtiesForSchoolLevel,
+    getSpecialtyById,
+    getSubjectsBySpecialty,
 } from "../lib/curriculum";
 
 const accents = ["mint", "peach", "lavender", "primary", "sky", "sunshine"];
@@ -70,15 +72,14 @@ export default function DashboardPage() {
   const user = getUser();
   const navigate = useNavigate();
 
-  const defaultLevel =
-    user.niveauScolaire === "college"
-      ? "1ere_annee_college"
-      : "6eme_annee_primaire";
+  const defaultSpecialty = getDefaultSpecialty(user);
 
-  const [selectedLevel, setSelectedLevel] = useState(defaultLevel);
+  const [selectedSpecialty, setSelectedSpecialty] = useState(defaultSpecialty);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const subjects = useMemo(() => getSubjectsByLevel(selectedLevel), [selectedLevel]);
-  const levels = getLevelOptions();
+  const subjects = useMemo(() => getSubjectsBySpecialty(selectedSpecialty), [selectedSpecialty]);
+  const specialtyInfo = getSpecialtyById(selectedSpecialty);
+  const schoolLevel = user.niveauScolaire || "primaire";
+  const specialties = useMemo(() => getSpecialtiesForSchoolLevel(schoolLevel), [schoolLevel]);
 
   return (
     <div className="dashboard-layout">
@@ -148,8 +149,8 @@ export default function DashboardPage() {
                 className="card-action"
                 type="button"
                 onClick={() =>
-                  navigate(`/courses/${selectedLevel}/Mathematiques`, {
-                    state: { subjectName: "Mathematiques", level: selectedLevel },
+                  navigate(`/courses/${selectedSpecialty}/Mathematiques`, {
+                    state: { subjectName: "Mathematiques", specialty: selectedSpecialty },
                   })
                 }
               >
@@ -172,8 +173,8 @@ export default function DashboardPage() {
                 <p className="resume-card-meta">Mathematiques</p>
               </div>
               <button className="card-action" type="button" onClick={() =>
-                  navigate(`/exercises/${selectedLevel}/Mathematiques`, {
-                    state: { subjectName: "Mathematiques", level: selectedLevel },
+                  navigate(`/exercises/${selectedSpecialty}/Mathematiques`, {
+                    state: { subjectName: "Mathematiques", specialty: selectedSpecialty },
                   })
                 }>
                 Continuer <ArrowRight size={15} />
@@ -255,8 +256,8 @@ export default function DashboardPage() {
                       className="card-action"
                       type="button"
                       onClick={() =>
-                        navigate(`/courses/${selectedLevel}/${subject}`, {
-                          state: { subjectName: subject, level: selectedLevel },
+                        navigate(`/courses/${selectedSpecialty}/${subject}`, {
+                          state: { subjectName: subject, specialty: selectedSpecialty },
                         })
                       }
                     >

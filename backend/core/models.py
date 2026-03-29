@@ -4,16 +4,16 @@ from datetime import datetime
 import uuid
 
 
-# ── Request / Response schemas ──────────────────────────────────────────────
+# ── Response schemas ─────────────────────────────────────────────────────────
 
 class ChatResponse(BaseModel):
     text: str
     audio: Optional[str] = None        # base64 mp3
     session_id: str
-    files_in_session: list[str] = []   # filenames user has uploaded this session
+    files_in_session: list[str] = []
 
 
-# ── Internal data models ─────────────────────────────────────────────────────
+# ── Session data models ──────────────────────────────────────────────────────
 
 class UploadedFile(BaseModel):
     file_uri: str
@@ -35,16 +35,14 @@ class Session(BaseModel):
     language: str = "fr-FR"
     chapter: str = ""
     mode: str = "general"          # course | exercise | mock_exam | general
-    level: str = ""                # e.g. "6eme_annee_primaire"
-    subject: str = ""              # e.g. "Mathematiques"
-    reference_pdfs: list[str] = [] # file_uris of auto-attached reference PDFs
+    level: str = ""
+    subject: str = ""
+    reference_pdfs: list[str] = []
     history: list[HistoryTurn] = []
     uploaded_files: list[UploadedFile] = []
     current_turn: int = 0
     created_at: datetime = Field(default_factory=datetime.now)
     last_active: datetime = Field(default_factory=datetime.now)
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def add_file(self, file_uri: str, name: str,
                  mime_type: str, description: str = ""):

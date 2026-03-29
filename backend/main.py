@@ -1,25 +1,34 @@
 """
 main.py
 -------
-FastAPI entry point. Thin routes — all logic lives in services.
+FastAPI entry point. Registers routers — all logic lives in packages.
 """
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
 
 from config import settings
-from models import ChatResponse
-from session_manager import session_manager
-from gemini_service import gemini_service
-from tts_service import tts_service
-from prompt_builder import (
-    build_system_prompt,
-    build_contents,
-    summarize_old_turns,
-)
+import database
+from services.session_manager import session_manager
+from auth.router import router as auth_router
+from pdfs.router import router as pdf_router
+from api.chat import router as chat_router
+from api.sessions import router as sessions_router
 
-app = FastAPI(title="AI Tutor API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await database.connect()
+    session_manager.init_store(db=database.get_db())
+    yield
+    # Shutdown
+    await database.disconnect()
+
+
+app = FastAPI(title="AI Tutor API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,181 +38,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# ── /api/chat ─────────────────────────────────────────────────────────────────
-
-@app.post("/api/chat", response_model=ChatResponse)
-async def chat_endpoint(
-    message:       str            = Form(...),
-    voice:         bool           = Form(False),
-    language:      str            = Form("fr-FR"),
-    chapter:       str            = Form(""),
-    mode:          str            = Form("general"),
-    level:         str            = Form(""),
-    subject:       str            = Form(""),
-    session_id:    Optional[str]  = Form(None),
-    reference_pdf: Optional[UploadFile] = File(None),
-    file:          Optional[UploadFile] = File(None),
-):
-    # Validate mode
-    valid_modes = {"course", "exercise", "mock_exam", "general"}
-    if mode not in valid_modes:
-        mode = "general"
-
-    # ── 1. Restore or create session ─────────────────────────────────────────
-    session = session_manager.get_or_create(
-        session_id=session_id,
-        language=language,
-        chapter=chapter,
-        mode=mode,
-        level=level,
-        subject=subject,
-    )
-
-    # ── 2. Handle uploaded file (if any) ─────────────────────────────────────
-    if file:
-        if file.content_type not in settings.ALLOWED_MIME_TYPES:
-            raise HTTPException(
-                status_code=415,
-                detail=f"Unsupported file type: {file.content_type}",
-            )
-
-        file_bytes = await file.read()
-
-        if len(file_bytes) > settings.MAX_FILE_SIZE_MB * 1024 * 1024:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File exceeds {settings.MAX_FILE_SIZE_MB} MB limit.",
-            )
-
-        file_uri, description = await gemini_service.upload_file(
-            file_bytes=file_bytes,
-            filename=file.filename,
-            mime_type=file.content_type,
-        )
-
-        session.add_file(
-            file_uri=file_uri,
-            name=file.filename,
-            mime_type=file.content_type,
-            description=description,
-        )
-        print(f"[chat] File uploaded → {file.filename} | {file_uri}")
-
-    # ── 2b. Handle reference PDF (course/exercise PDF auto-attached) ─────────
-    if reference_pdf and reference_pdf.filename:
-        # Only upload if not already in session
-        existing_names = session.get_file_names()
-        if reference_pdf.filename not in existing_names:
-            if reference_pdf.content_type in settings.ALLOWED_MIME_TYPES:
-                ref_bytes = await reference_pdf.read()
-                if len(ref_bytes) <= settings.MAX_FILE_SIZE_MB * 1024 * 1024:
-                    ref_uri, ref_desc = await gemini_service.upload_file(
-                        file_bytes=ref_bytes,
-                        filename=reference_pdf.filename,
-                        mime_type=reference_pdf.content_type,
-                    )
-                    session.add_file(
-                        file_uri=ref_uri,
-                        name=reference_pdf.filename,
-                        mime_type=reference_pdf.content_type,
-                        description=ref_desc,
-                    )
-                    session.reference_pdfs.append(ref_uri)
-                    print(f"[chat] Reference PDF uploaded → {reference_pdf.filename} | {ref_uri}")
-
-    # ── 3. Verify existing session files are still alive (48h TTL) ───────────
-    #       If a file expired, remove it from session so we don't send dead URIs
-    live_files = []
-    for f in session.uploaded_files:
-        if gemini_service.verify_file_alive(f.file_uri):
-            live_files.append(f)
-        else:
-            print(f"[chat] File expired and removed from session: {f.original_name}")
-    session.uploaded_files = live_files
-
-    # ── 4. Build summary of old turns ────────────────────────────────────────
-    old_turns  = session.history[:-settings.MAX_RECENT_TURNS] \
-                 if len(session.history) > settings.MAX_RECENT_TURNS else []
-    summary    = summarize_old_turns(gemini_service.client, old_turns, language)
-
-    # ── 5. Build files context block for system prompt ────────────────────────
-    files_context = ""
-    if session.uploaded_files:
-        lines = [
-            f"- {f.original_name}: {f.description or 'uploaded by student'}"
-            for f in session.uploaded_files
-        ]
-        files_context = "\n".join(lines)
-
-    # ── 6. Build system prompt + contents ─────────────────────────────────────
-    system_prompt = build_system_prompt(
-        language=language,
-        chapter=chapter or session.chapter,
-        summary=summary,
-        files_context=files_context,
-        mode=mode or session.mode,
-        level=level or session.level,
-        subject=subject or session.subject,
-    )
-
-    contents = build_contents(session=session, user_message=message)
-
-    # ── 7. Generate response ──────────────────────────────────────────────────
-    try:
-        display_text, spoken_text = gemini_service.generate(
-            system_prompt=system_prompt,
-            contents=contents,
-        )
-    except RuntimeError as e:
-        print(f"[chat] All retries exhausted: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail="The AI is temporarily unavailable due to high demand. Please try again in a few seconds.",
-        )
-    except Exception as e:
-        print(f"[chat] Unexpected generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
-
-    # ── 8. TTS (optional) ─────────────────────────────────────────────────────
-    audio_base64 = tts_service.synthesize(spoken_text) if voice else None
-
-    # ── 9. Persist turn + save session ───────────────────────────────────────
-    session.add_turn("user",  message)
-    session.add_turn("model", display_text)  # store display_text, not JSON
-    session_manager.save(session)
-
-    # ── 10. Return ────────────────────────────────────────────────────────────
-    return ChatResponse(
-        text=display_text,
-        audio=audio_base64,
-        session_id=session.session_id,
-        files_in_session=session.get_file_names(),
-    )
-
-
-# ── /api/session/{id} ─────────────────────────────────────────────────────────
-
-@app.delete("/api/session/{session_id}")
-async def delete_session(session_id: str):
-    """Clear a session explicitly (e.g. user clicks 'New Chat')."""
-    session_manager.delete(session_id)
-    return {"deleted": session_id}
-
-
-@app.get("/api/session/{session_id}")
-async def get_session_info(session_id: str):
-    """Debug endpoint — returns session metadata."""
-    session = session_manager.get_or_create(session_id)
-    return {
-        "session_id": session.session_id,
-        "turn_count": session.current_turn,
-        "files": session.get_file_names(),
-        "chapter": session.chapter,
-        "history_length": len(session.history),
-        "created_at": session.created_at,
-        "last_active": session.last_active,
-    }
+app.include_router(auth_router)
+app.include_router(pdf_router)
+app.include_router(chat_router)
+app.include_router(sessions_router)
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

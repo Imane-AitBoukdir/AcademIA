@@ -1,39 +1,48 @@
 import { motion } from "framer-motion";
 import { ChevronRight, FileText, Menu, ScrollText } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
 import {
+    fetchChapterPdfs,
     formatSubjectName,
     getChaptersForSubject,
+    getPdfUrl,
     normalizeValue,
 } from "../lib/curriculum";
-
-function getPdfPath(level, subject, chapter) {
-  const s = normalizeValue(subject);
-  const c = normalizeValue(chapter);
-  return `/pdfs/${level}/${s}/${c}/exam_ref.pdf`;
-}
 
 export default function MockExamsPage() {
   const params = useParams();
   const location = useLocation();
 
-  const level = params.level || location.state?.level || "6eme_annee_primaire";
+  const specialty = params.specialty || location.state?.specialty || "6eme_annee_primaire";
   const rawSubject = decodeURIComponent(
     params.subject || location.state?.subjectName || "Mathematiques",
   );
 
-  const chapters = useMemo(
-    () => getChaptersForSubject(level, rawSubject),
-    [level, rawSubject],
+  const groupedChapters = useMemo(
+    () => getChaptersForSubject(specialty, rawSubject),
+    [specialty, rawSubject],
   );
-  const [selectedChapter, setSelectedChapter] = useState(chapters[0] || "");
+  const [selectedChapter, setSelectedChapter] = useState(() => {
+    const d = getChaptersForSubject(specialty, rawSubject);
+    const first = d.s1?.[0] || d.s2?.[0];
+    const sem = d.s1?.length > 0 ? "s1" : "s2";
+    return first ? { ...first, semester: sem } : { name: "", semester: "s1" };
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [examPdfs, setExamPdfs] = useState([]);
 
-  const refExamPdf = getPdfPath(level, rawSubject, selectedChapter);
+  useEffect(() => {
+    let cancelled = false;
+    fetchChapterPdfs("exams", specialty, rawSubject, selectedChapter.semester, selectedChapter.name)
+      .then((list) => { if (!cancelled) setExamPdfs(list); });
+    return () => { cancelled = true; };
+  }, [specialty, rawSubject, selectedChapter.name, selectedChapter.semester]);
+
+  const examPdfUrl = examPdfs[0] ? getPdfUrl(examPdfs[0].id) : null;
 
   return (
     <div className="dashboard-layout">
@@ -55,72 +64,85 @@ export default function MockExamsPage() {
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
             <ChevronRight size={14} />
-            <span>{selectedChapter}</span>
+            <span>{selectedChapter.name}</span>
           </div>
-          <p className="course-level-badge">{level.replaceAll("_", " ")}</p>
+          <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
         </header>
 
         <div className="course-body">
           <aside className="chapter-sidebar">
             <h2>Chapters</h2>
             <div className="chapter-list">
-              {chapters.map((ch) => (
-                <button
-                  key={`exam-${normalizeValue(rawSubject)}-${ch}`}
-                  type="button"
-                  className={
-                    selectedChapter === ch
-                      ? "chapter-item active"
-                      : "chapter-item"
-                  }
-                  onClick={() => {
-                    setSelectedChapter(ch);
-                    setChatOpen(false);
-                  }}
-                >
-                  <FileText size={14} />
-                  <span>{ch}</span>
-                </button>
-              ))}
+              {groupedChapters.s1?.length > 0 && (
+                <>
+                  <p className="semester-label">Semestre 1</p>
+                  {groupedChapters.s1.map((ch) => (
+                    <button
+                      key={`exam-s1-${normalizeValue(rawSubject)}-${ch.name}`}
+                      type="button"
+                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s1" ? "chapter-item active" : "chapter-item"}
+                      onClick={() => { setSelectedChapter({ ...ch, semester: "s1" }); setChatOpen(false); }}
+                    >
+                      <FileText size={14} />
+                      <span>{ch.name}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+              {groupedChapters.s2?.length > 0 && (
+                <>
+                  <p className="semester-label" style={{ marginTop: groupedChapters.s1?.length > 0 ? "0.75rem" : 0 }}>Semestre 2</p>
+                  {groupedChapters.s2.map((ch) => (
+                    <button
+                      key={`exam-s2-${normalizeValue(rawSubject)}-${ch.name}`}
+                      type="button"
+                      className={selectedChapter.name === ch.name && selectedChapter.semester === "s2" ? "chapter-item active" : "chapter-item"}
+                      onClick={() => { setSelectedChapter({ ...ch, semester: "s2" }); setChatOpen(false); }}
+                    >
+                      <FileText size={14} />
+                      <span>{ch.name}</span>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           </aside>
 
           <div className={chatOpen ? "split-view" : "chapter-content-wrapper"}>
             <motion.section
               className="chapter-content"
-              key={selectedChapter}
+              key={selectedChapter.name + selectedChapter.semester}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
             >
               <div className="pdf-viewer-area">
-                <iframe
-                  src={refExamPdf}
-                  title={`Exam Reference: ${selectedChapter}`}
-                  className="pdf-iframe"
-                />
-                <div className="pdf-fallback">
-                  <ScrollText size={32} />
-                  <h3>Reference Exam — {selectedChapter}</h3>
-                  <p>
-                    No reference exam found. Place a PDF at:
-                    <br />
-                    <code>{refExamPdf}</code>
-                  </p>
-                  <p style={{ marginTop: "0.5rem", color: "var(--text-light)" }}>
-                    You can still generate an AI exam without a reference.
-                  </p>
-                </div>
+                {examPdfUrl ? (
+                  <iframe
+                    src={examPdfUrl}
+                    title={`Exam Reference: ${selectedChapter.name}`}
+                    className="pdf-iframe"
+                  />
+                ) : (
+                  <div className="pdf-fallback">
+                    <ScrollText size={32} />
+                    <h3>Reference Exam — {selectedChapter.name}</h3>
+                    <p>No exam PDFs uploaded yet for this chapter.</p>
+                    <p style={{ marginTop: "0.5rem", color: "var(--text-light)" }}>
+                      You can still generate an AI exam without a reference.
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.section>
 
             {chatOpen && (
               <AIChatPanel
                 mode="mock_exam"
-                level={level}
+                level={specialty}
                 subject={rawSubject}
-                chapter={selectedChapter}
-                referencePdfPath={refExamPdf}
+                chapter={selectedChapter.name}
+                referencePdfPath={examPdfUrl}
                 onClose={() => setChatOpen(false)}
               />
             )}
