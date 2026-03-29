@@ -190,12 +190,24 @@
   box-shadow: 0 2px 8px rgba(108, 71, 184, 0.25);
 }
 
+/* Force all markdown-rendered children in user bubble to be white
+   (overrides global h1 { color: var(--text) } and p { color: var(--text-secondary) }) */
+.aichat-bubble.user * {
+  color: #fff;
+}
+
 .aichat-bubble :is(p, ul, ol, pre, blockquote) {
   margin: 0 0 8px;
 }
 
 .aichat-bubble :is(p, ul, ol, pre, blockquote):last-child {
   margin-bottom: 0;
+}
+
+/* Ensure list markers/numbers render inside the bubble boundary */
+.aichat-bubble ol,
+.aichat-bubble ul {
+  padding-left: 1.4rem;
 }
 
 .aichat-bubble code {
@@ -593,15 +605,7 @@
   margin: 0;
 }
 
-/* ─── Split View Layout Helper ─── */
-/* Used by parent pages (CoursePage, ExercicePage) */
-.split-view {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  min-height: 0;
-  flex: 1;
-}
-
+/* ─── Split View Layout Overrides ─── */
 .split-view .pdf-viewer-area {
   min-height: 0;
   overflow: hidden;
@@ -609,6 +613,7 @@
 
 .split-view .aichat-panel {
   width: 100%;
+  max-height: 100%;
 }
 
 /* Floating AI button */

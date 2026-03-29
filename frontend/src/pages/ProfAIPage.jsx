@@ -50,7 +50,7 @@ export default function ProfAIPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          <AIChatPanel mode="general" level={specialty} fullWidth />
+          <AIChatPanel mode="general" level={specialty} fullWidth chapterKey="prof_ai_general" />
         </motion.div>
       </main>
     </div>

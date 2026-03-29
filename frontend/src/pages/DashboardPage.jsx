@@ -81,6 +81,14 @@ export default function DashboardPage() {
   const schoolLevel = user.niveauScolaire || "primaire";
   const specialties = useMemo(() => getSpecialtiesForSchoolLevel(schoolLevel), [schoolLevel]);
 
+  /* ── Read recent activity from localStorage ── */
+  const lastCourse = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("academia_last_course")); } catch { return null; }
+  }, []);
+  const lastExercise = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("academia_last_exercise")); } catch { return null; }
+  }, []);
+
   return (
     <div className="dashboard-layout">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -131,6 +139,7 @@ export default function DashboardPage() {
               <h2 className="dash-section-title">Reprendre ou j'ai laisse</h2>
             </div>
             <div className="dash-resume-stack">
+            {lastCourse ? (
             <motion.div
               className="dash-resume-card"
               initial={{ opacity: 0, y: 10 }}
@@ -142,22 +151,33 @@ export default function DashboardPage() {
               </div>
               <div className="resume-card-body">
                 <p className="resume-card-label">Dernier cours consulte</p>
-                <h3 className="resume-card-title">Nombres relatifs</h3>
-                <p className="resume-card-meta">Mathematiques</p>
+                <h3 className="resume-card-title">{lastCourse.chapter}</h3>
+                <p className="resume-card-meta">{formatSubjectName(lastCourse.subject)}</p>
               </div>
               <button
                 className="card-action"
                 type="button"
                 onClick={() =>
-                  navigate(`/courses/${selectedSpecialty}/Mathematiques`, {
-                    state: { subjectName: "Mathematiques", specialty: selectedSpecialty },
+                  navigate(`/courses/${lastCourse.specialty}/${encodeURIComponent(lastCourse.subject)}`, {
+                    state: { subjectName: lastCourse.subject, specialty: lastCourse.specialty, chapter: lastCourse.chapter, semester: lastCourse.semester },
                   })
                 }
               >
                 Reprendre <ArrowRight size={15} />
               </button>
             </motion.div>
+            ) : (
+            <div className="dash-resume-card" style={{ opacity: 0.5 }}>
+              <div className="resume-card-icon accent-lavender"><PlayCircle size={20} /></div>
+              <div className="resume-card-body">
+                <p className="resume-card-label">Dernier cours consulte</p>
+                <h3 className="resume-card-title">Aucun cours encore</h3>
+                <p className="resume-card-meta">Commencez a explorer vos matieres !</p>
+              </div>
+            </div>
+            )}
 
+            {lastExercise ? (
             <motion.div
               className="dash-resume-card"
               initial={{ opacity: 0, y: 10 }}
@@ -169,17 +189,27 @@ export default function DashboardPage() {
               </div>
               <div className="resume-card-body">
                 <p className="resume-card-label">Dernier exercice</p>
-                <h3 className="resume-card-title">Exercice 3 — Puissances</h3>
-                <p className="resume-card-meta">Mathematiques</p>
+                <h3 className="resume-card-title">{lastExercise.chapter}</h3>
+                <p className="resume-card-meta">{formatSubjectName(lastExercise.subject)}</p>
               </div>
               <button className="card-action" type="button" onClick={() =>
-                  navigate(`/exercises/${selectedSpecialty}/Mathematiques`, {
-                    state: { subjectName: "Mathematiques", specialty: selectedSpecialty },
+                  navigate(`/exercises/${lastExercise.specialty}/${encodeURIComponent(lastExercise.subject)}`, {
+                    state: { subjectName: lastExercise.subject, specialty: lastExercise.specialty, chapter: lastExercise.chapter, semester: lastExercise.semester },
                   })
                 }>
                 Continuer <ArrowRight size={15} />
               </button>
             </motion.div>
+            ) : (
+            <div className="dash-resume-card" style={{ opacity: 0.5 }}>
+              <div className="resume-card-icon accent-peach"><PenTool size={20} /></div>
+              <div className="resume-card-body">
+                <p className="resume-card-label">Dernier exercice</p>
+                <h3 className="resume-card-title">Aucun exercice encore</h3>
+                <p className="resume-card-meta">Allez faire des exercices !</p>
+              </div>
+            </div>
+            )}
             </div>
           </section>
 

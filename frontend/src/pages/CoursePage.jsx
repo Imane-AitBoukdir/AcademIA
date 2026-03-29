@@ -38,12 +38,16 @@ export default function CoursePage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [chaptersWidth, setChaptersWidth] = useState(280);
+  const [chatWidth, setChatWidth] = useState(380);
+  const [isResizing, setIsResizing] = useState(false);
   const isResizingRef = useRef(false);
+  const isChatResizingRef = useRef(false);
 
   /* ── Resize handler for chapter sidebar ── */
   const handleResizeMouseDown = useCallback((e) => {
     e.preventDefault();
     isResizingRef.current = true;
+    setIsResizing(true);
     const startX = e.clientX;
     const startW = chaptersWidth;
 
@@ -54,12 +58,36 @@ export default function CoursePage() {
     };
     const onMouseUp = () => {
       isResizingRef.current = false;
+      setIsResizing(false);
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   }, [chaptersWidth]);
+
+  /* ── Resize handler for chat panel ── */
+  const handleChatResizeMouseDown = useCallback((e) => {
+    e.preventDefault();
+    isChatResizingRef.current = true;
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startW = chatWidth;
+
+    const onMouseMove = (ev) => {
+      if (!isChatResizingRef.current) return;
+      const newW = Math.min(600, Math.max(280, startW - (ev.clientX - startX)));
+      setChatWidth(newW);
+    };
+    const onMouseUp = () => {
+      isChatResizingRef.current = false;
+      setIsResizing(false);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [chatWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +101,16 @@ export default function CoursePage() {
     : null;
 
   const chapterKey = `${normalizeValue(specialty)}_${normalizeValue(rawSubject)}_${selectedChapter.semester}_${normalizeValue(selectedChapter.name)}`;
+
+  /* ── Save recent activity ── */
+  useEffect(() => {
+    try {
+      localStorage.setItem("academia_last_course", JSON.stringify({
+        specialty, subject: rawSubject,
+        chapter: selectedChapter.name, semester: selectedChapter.semester,
+      }));
+    } catch {}
+  }, [specialty, rawSubject, selectedChapter.name, selectedChapter.semester]);
 
   return (
     <div className={`dashboard-layout${navCollapsed ? " nav-collapsed" : ""}`}>
@@ -106,7 +144,7 @@ export default function CoursePage() {
         </header>
 
         <div
-          className="course-body"
+          className={`course-body${isResizing ? " resizing" : ""}`}
           style={{ gridTemplateColumns: `${chaptersWidth}px 6px 1fr` }}
         >
           <aside className="chapter-sidebar">
@@ -161,7 +199,10 @@ export default function CoursePage() {
           {/* Resize handle */}
           <div className="chapter-resize-handle" onMouseDown={handleResizeMouseDown} />
 
-          <div className={chatOpen ? "split-view" : "chapter-content-wrapper"}>
+          <div
+            className={chatOpen ? `split-view${isResizing ? " resizing" : ""}` : "chapter-content-wrapper"}
+            style={chatOpen ? { gridTemplateColumns: `1fr 6px ${chatWidth}px` } : undefined}
+          >
             <motion.section
               className="chapter-content"
               key={selectedChapter.name + selectedChapter.semester}
@@ -203,7 +244,9 @@ export default function CoursePage() {
             </motion.section>
 
             {chatOpen && (
-              <AIChatPanel
+              <>
+                <div className="chat-resize-handle" onMouseDown={handleChatResizeMouseDown} />
+                <AIChatPanel
                 mode="course"
                 level={specialty}
                 subject={rawSubject}
@@ -212,6 +255,7 @@ export default function CoursePage() {
                 onClose={() => setChatOpen(false)}
                 chapterKey={chapterKey}
               />
+              </>
             )}
           </div>
         </div>

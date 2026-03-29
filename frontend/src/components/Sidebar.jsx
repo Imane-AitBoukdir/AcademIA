@@ -32,7 +32,7 @@ export default function Sidebar({ open, onClose }) {
       />
       <aside className={`sidebar${open ? " open" : ""}`}>
         <div className="sidebar-logo">
-          <Link to="/">
+          <Link to="/dashboard">
             <Sparkles size={18} className="sidebar-logo-icon" />
             AcademIA
           </Link>

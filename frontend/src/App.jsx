@@ -6,6 +6,8 @@ import ExercicePage from "./pages/ExercicePage";
 import HomePage from "./pages/HomePage";
 import MockExamsPage from "./pages/MockExamsPage";
 import ProfAIPage from "./pages/ProfAIPage";
+import ProfilPage from "./pages/ProfilPage";
+import SettingsPage from "./pages/SettingsPage";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import SubjectPickerPage from "./pages/SubjectPickerPage";
@@ -31,8 +33,8 @@ export default function App() {
 			<Route path="/exercises/:specialty/:subject" element={<ExercicePage />} />
 			<Route path="/mock-exams/:specialty/:subject" element={<MockExamsPage />} />
 			<Route path="/prof-ai" element={<ProfAIPage />} />
-			<Route path="/profil" element={<DashboardPage />} />
-			<Route path="/settings" element={<DashboardPage />} />
+			<Route path="/profil" element={<ProfilPage />} />
+			<Route path="/settings" element={<SettingsPage />} />
 			<Route path="*" element={<Navigate to="/" replace />} />
 		</Routes>
 	);

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { ChevronRight, FileText, Menu, ScrollText } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, FileText, Menu, PanelLeftClose, PanelLeftOpen, ScrollText } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
@@ -34,6 +34,54 @@ export default function MockExamsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [examPdfs, setExamPdfs] = useState([]);
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [chaptersWidth, setChaptersWidth] = useState(280);
+  const [chatWidth, setChatWidth] = useState(380);
+  const [isResizing, setIsResizing] = useState(false);
+  const isResizingRef = useRef(false);
+  const isChatResizingRef = useRef(false);
+
+  /* ── Resize handler for chapter sidebar ── */
+  const handleResizeMouseDown = useCallback((e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startW = chaptersWidth;
+    const onMouseMove = (ev) => {
+      if (!isResizingRef.current) return;
+      setChaptersWidth(Math.min(450, Math.max(180, startW + (ev.clientX - startX))));
+    };
+    const onMouseUp = () => {
+      isResizingRef.current = false;
+      setIsResizing(false);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [chaptersWidth]);
+
+  /* ── Resize handler for chat panel ── */
+  const handleChatResizeMouseDown = useCallback((e) => {
+    e.preventDefault();
+    isChatResizingRef.current = true;
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startW = chatWidth;
+    const onMouseMove = (ev) => {
+      if (!isChatResizingRef.current) return;
+      setChatWidth(Math.min(600, Math.max(280, startW - (ev.clientX - startX))));
+    };
+    const onMouseUp = () => {
+      isChatResizingRef.current = false;
+      setIsResizing(false);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [chatWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +92,10 @@ export default function MockExamsPage() {
 
   const examPdfUrl = examPdfs[0] ? getPdfUrl(examPdfs[0].id) : null;
 
+  const chapterKey = `exam_${normalizeValue(specialty)}_${normalizeValue(rawSubject)}_${selectedChapter.semester}_${normalizeValue(selectedChapter.name)}`;
+
   return (
-    <div className="dashboard-layout">
+    <div className={`dashboard-layout${navCollapsed ? " nav-collapsed" : ""}`}>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className="dashboard-main">
@@ -56,6 +106,14 @@ export default function MockExamsPage() {
             onClick={() => setSidebarOpen(true)}
           >
             <Menu size={18} />
+          </button>
+          <button
+            className="nav-collapse-btn"
+            type="button"
+            onClick={() => setNavCollapsed((v) => !v)}
+            title={navCollapsed ? "Show sidebar" : "Hide sidebar"}
+          >
+            {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <div className="course-breadcrumb">
             <Link to="/dashboard">Dashboard</Link>
@@ -69,7 +127,10 @@ export default function MockExamsPage() {
           <p className="course-level-badge">{specialty.replaceAll("_", " ")}</p>
         </header>
 
-        <div className="course-body">
+        <div
+          className={`course-body${isResizing ? " resizing" : ""}`}
+          style={{ gridTemplateColumns: `${chaptersWidth}px 6px 1fr` }}
+        >
           <aside className="chapter-sidebar">
             <h2>Chapters</h2>
             <div className="chapter-list">
@@ -108,7 +169,13 @@ export default function MockExamsPage() {
             </div>
           </aside>
 
-          <div className={chatOpen ? "split-view" : "chapter-content-wrapper"}>
+          {/* Resize handle */}
+          <div className="chapter-resize-handle" onMouseDown={handleResizeMouseDown} />
+
+          <div
+            className={chatOpen ? `split-view${isResizing ? " resizing" : ""}` : "chapter-content-wrapper"}
+            style={chatOpen ? { gridTemplateColumns: `1fr 6px ${chatWidth}px` } : undefined}
+          >
             <motion.section
               className="chapter-content"
               key={selectedChapter.name + selectedChapter.semester}
@@ -137,14 +204,18 @@ export default function MockExamsPage() {
             </motion.section>
 
             {chatOpen && (
-              <AIChatPanel
-                mode="mock_exam"
-                level={specialty}
-                subject={rawSubject}
-                chapter={selectedChapter.name}
-                referencePdfPath={examPdfUrl}
-                onClose={() => setChatOpen(false)}
-              />
+              <>
+                <div className="chat-resize-handle" onMouseDown={handleChatResizeMouseDown} />
+                <AIChatPanel
+                  mode="mock_exam"
+                  level={specialty}
+                  subject={rawSubject}
+                  chapter={selectedChapter.name}
+                  referencePdfPath={examPdfUrl}
+                  onClose={() => setChatOpen(false)}
+                  chapterKey={chapterKey}
+                />
+              </>
             )}
           </div>
         </div>
