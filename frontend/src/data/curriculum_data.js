@@ -179,6 +179,6 @@ export function getDefaultSpecialty(user) {
   if (!user) return "6eme_annee_primaire";
   const ns = user.niveauScolaire || "primaire";
   if (ns === "lycee") return user.specialty || "tc";
-  if (ns === "college") return "1ere_annee_college";
-  return "6eme_annee_primaire";
+  if (ns === "college") return user.specialty || "1ere_annee_college";
+  return user.specialty || "6eme_annee_primaire";
 }

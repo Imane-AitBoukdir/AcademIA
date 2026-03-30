@@ -137,10 +137,12 @@ export default function ExercicePage() {
 
   const chapterKey = `ex_${normalizeValue(specialty)}_${normalizeValue(rawSubject)}_${selectedChapter.semester}_${normalizeValue(selectedChapter.name)}`;
 
-  /* ── Save recent activity ── */
+  /* ── Save recent activity (per-user) ── */
   useEffect(() => {
     try {
-      localStorage.setItem("academia_last_exercise", JSON.stringify({
+      const u = JSON.parse(localStorage.getItem("academiaUser") || "{}");
+      const uid = u.id || u._id || "";
+      localStorage.setItem(`academia_last_exercise_${uid}`, JSON.stringify({
         specialty, subject: rawSubject,
         chapter: selectedChapter.name, semester: selectedChapter.semester,
       }));

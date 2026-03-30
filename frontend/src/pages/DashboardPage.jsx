@@ -1,29 +1,29 @@
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  BookOpen,
-  FlaskConical,
-  Globe,
-  Landmark,
-  Languages,
-  Leaf,
-  Menu,
-  PenTool,
-  PlayCircle,
-  RotateCcw,
-  ScrollText,
-  Star,
-  Zap
+    ArrowRight,
+    BookOpen,
+    FlaskConical,
+    Globe,
+    Landmark,
+    Languages,
+    Leaf,
+    Menu,
+    PenTool,
+    PlayCircle,
+    RotateCcw,
+    ScrollText,
+    Star,
+    Zap
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
-  formatSubjectName,
-  getDefaultSpecialty,
-  getSpecialtiesForSchoolLevel,
-  getSpecialtyById,
-  getSubjectsBySpecialty,
+    formatSubjectName,
+    getDefaultSpecialty,
+    getSpecialtiesForSchoolLevel,
+    getSpecialtyById,
+    getSubjectsBySpecialty,
 } from "../lib/curriculum";
 
 const accents = ["mint", "peach", "lavender", "primary", "sky", "sunshine"];
@@ -80,13 +80,14 @@ export default function DashboardPage() {
   const schoolLevel = user.niveauScolaire || "primaire";
   const specialties = useMemo(() => getSpecialtiesForSchoolLevel(schoolLevel), [schoolLevel]);
 
-  /* ── Read recent activity from localStorage ── */
+  /* ── Read recent activity from localStorage (per-user) ── */
+  const uid = user.id || user._id || "";
   const lastCourse = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem("academia_last_course")); } catch { return null; }
-  }, []);
+    try { return JSON.parse(localStorage.getItem(`academia_last_course_${uid}`)); } catch { return null; }
+  }, [uid]);
   const lastExercise = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem("academia_last_exercise")); } catch { return null; }
-  }, []);
+    try { return JSON.parse(localStorage.getItem(`academia_last_exercise_${uid}`)); } catch { return null; }
+  }, [uid]);
 
   return (
     <div className="dashboard-layout">

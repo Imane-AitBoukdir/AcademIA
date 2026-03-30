@@ -35,6 +35,10 @@ export default function SignUpPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (form.password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
     try {
       const res = await fetch("http://localhost:8000/api/auth/signup", {
         method: "POST",
@@ -43,7 +47,12 @@ export default function SignUpPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.detail || "L'inscription a échoué.");
+        const detail = data.detail;
+        if (Array.isArray(detail)) {
+          setError(detail.map((e) => e.msg).join(", "));
+        } else {
+          setError(detail || "L'inscription a échoué.");
+        }
         return;
       }
       const user = await res.json();
