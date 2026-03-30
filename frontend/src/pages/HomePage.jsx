@@ -85,7 +85,7 @@ export default function HomePage() {
                 <a href="#features" className="btn btn-outline">Explorer les matières</a>
               </div>
               <div className="hero-chips">
-                <span className="hero-chip">Du primaire au collège</span>
+                <span className="hero-chip">Du primaire au Lycée</span>
                 <span className="hero-chip">Support arabe et français</span>
                 <span className="hero-chip">Tuteur IA bienveillant</span>
               </div>

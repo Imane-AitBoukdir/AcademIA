@@ -134,9 +134,10 @@ export async function deletePdf(fileId) {
 
 /**
  * Generate a mock exam via Gemini → LaTeX → PDF.
+ * Accepts optional pre-cached Gemini URIs to skip upload.
  * Returns { id, filename } on success.
  */
-export async function generateExam(specialty, subject, chapters, language, coursePdfId, examPdfId) {
+export async function generateExam(specialty, subject, chapters, language, coursePdfId, examPdfId, courseUri, examUri) {
   const fd = new FormData();
   fd.append("subject", normalizeValue(subject));
   fd.append("level", specialty);
@@ -145,6 +146,8 @@ export async function generateExam(specialty, subject, chapters, language, cours
   fd.append("language", language || "fr");
   if (coursePdfId) fd.append("course_pdf_id", coursePdfId);
   if (examPdfId) fd.append("exam_pdf_id", examPdfId);
+  if (courseUri) fd.append("course_uri", courseUri);
+  if (examUri) fd.append("exam_uri", examUri);
   const res = await fetch(`${API_URL}/api/generate-exam`, { method: "POST", body: fd });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -153,3 +156,15 @@ export async function generateExam(specialty, subject, chapters, language, cours
   return res.json();
 }
 
+/**
+ * Pre-upload all course + exam PDFs for a subject to Gemini (cache warming).
+ * Returns { cached: { gridfs_file_id: gemini_uri }, count }.
+ */
+export async function preUploadPdfs(specialty, subject) {
+  const fd = new FormData();
+  fd.append("specialty", specialty);
+  fd.append("subject", normalizeValue(subject));
+  const res = await fetch(`${API_URL}/api/pre-upload-pdfs`, { method: "POST", body: fd });
+  if (!res.ok) return { cached: {}, count: 0 };
+  return res.json();
+}

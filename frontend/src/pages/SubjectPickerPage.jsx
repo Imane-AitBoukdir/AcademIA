@@ -115,41 +115,46 @@ export default function SubjectPickerPage() {
             <span className="content-title-count">{subjects.length} matières</span>
           </div>
           <div className="subject-grid">
-            {subjects.map((subject, index) => {
-              const meta = getSubjectMeta(subject);
+            {subjects.map((subjectObj, index) => {
+              const subjectName = typeof subjectObj === "string" ? subjectObj : subjectObj.name;
+              const isDisabled = typeof subjectObj === "object" && subjectObj.enabled === false;
+              const meta = getSubjectMeta(subjectName);
               const accent = meta.color || accents[index % accents.length];
               return (
                 <motion.div
-                  key={subject}
-                  className={`subject-card accent-${accent}`}
+                  key={subjectName}
+                  className={`subject-card accent-${accent}${isDisabled ? " subject-card--disabled" : ""}`}
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + index * 0.05, duration: 0.35 }}
                 >
+                  {isDisabled && <span className="coming-soon-badge-card">Bientôt disponible</span>}
                   <div className="subject-card-img">
                     <img
                       src={meta.img}
-                      alt={formatSubjectName(subject)}
+                      alt={formatSubjectName(subjectName)}
                       loading="lazy"
                     />
                   </div>
                   <div className="subject-card-body">
                     <h3 className="subject-card-title">
-                      {formatSubjectName(subject)}
+                      {formatSubjectName(subjectName)}
                     </h3>
                     <p className="subject-card-desc">{config.desc}</p>
-                    <button
-                      className="card-action"
-                      type="button"
-                      onClick={() =>
-                        navigate(
-                          `${config.routePrefix}/${selectedSpecialty}/${subject}`,
-                          { state: { subjectName: subject, specialty: selectedSpecialty } },
-                        )
-                      }
-                    >
-                      Ouvrir <ArrowRight size={15} />
-                    </button>
+                    {!isDisabled && (
+                      <button
+                        className="card-action"
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `${config.routePrefix}/${selectedSpecialty}/${subjectName}`,
+                            { state: { subjectName, specialty: selectedSpecialty } },
+                          )
+                        }
+                      >
+                        Ouvrir <ArrowRight size={15} />
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               );

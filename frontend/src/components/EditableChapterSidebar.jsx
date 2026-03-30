@@ -8,7 +8,7 @@
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, FileText, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Eye, EyeOff, FileText, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as api from "../lib/admin_api";
 import { normalizeValue, reloadCurriculum } from "../lib/curriculum";
@@ -133,6 +133,12 @@ function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, i
     onChanged();
   };
 
+  const handleToggleEnabled = async (id, currentEnabled) => {
+    await api.updateChapter(id, { enabled: !currentEnabled });
+    await reloadCurriculum();
+    onChanged();
+  };
+
   const isSelected = (ch) => selectedChapter.name === ch.name && selectedChapter.semester === semester;
 
   // ── Read-only (student) ──
@@ -144,11 +150,12 @@ function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, i
           <button
             key={`${semester}-${normalizeValue(rawSubject)}-${ch.name}`}
             type="button"
-            className={isSelected(ch) ? "chapter-item active" : "chapter-item"}
-            onClick={() => onSelect({ ...ch, semester })}
+            className={`chapter-item${isSelected(ch) ? " active" : ""}${ch.enabled === false ? " chapter-item--disabled" : ""}`}
+            onClick={() => ch.enabled !== false && onSelect({ ...ch, semester })}
           >
             <FileText size={14} />
             <span>{ch.name}</span>
+            {ch.enabled === false && <span className="coming-soon-badge">Bientôt disponible</span>}
           </button>
         ))}
       </>
@@ -171,6 +178,14 @@ function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, i
                 <FileText size={14} />
                 <span>{ch.name}</span>
                 <span className="ecs-actions">
+                  <button
+                    type="button"
+                    className={`ecs-toggle-btn${ch.enabled === false ? " muted" : ""}`}
+                    title={ch.enabled === false ? "Activer" : "Désactiver"}
+                    onClick={(e) => { e.stopPropagation(); handleToggleEnabled(ch._id, ch.enabled !== false); }}
+                  >
+                    {ch.enabled === false ? <EyeOff size={11} /> : <Eye size={11} />}
+                  </button>
                   <InlineRename value={ch.name} onSave={(v) => handleRename(ch._id, v)} />
                   <DeleteConfirm onConfirm={() => handleDelete(ch._id)} />
                 </span>

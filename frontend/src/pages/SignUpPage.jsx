@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { lyceeSpecialties } from "../lib/curriculum";
+import { getSpecialtiesForSchoolLevel, lyceeSpecialties } from "../lib/curriculum";
 
 const initialForm = {
   nom: "",
@@ -24,8 +24,8 @@ export default function SignUpPage() {
     const { name, value } = e.target;
     setForm((prev) => {
       const next = { ...prev, [name]: value };
-      // Reset specialty when switching away from lycee
-      if (name === "niveauScolaire" && value !== "lycee") {
+      // Reset specialty when switching level
+      if (name === "niveauScolaire") {
         next.specialty = "";
       }
       return next;
@@ -112,6 +112,48 @@ export default function SignUpPage() {
             </select>
           </div>
 
+          {form.niveauScolaire === "primaire" && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="specialty">Année</label>
+              <select
+                id="specialty"
+                className="form-input"
+                required
+                name="specialty"
+                value={form.specialty}
+                onChange={onChange}
+              >
+                <option value="">— Sélectionnez votre année —</option>
+                {getSpecialtiesForSchoolLevel("primaire").map((s) => (
+                  <option key={s.id} value={s.id} disabled={s.enabled === false}>
+                    {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {form.niveauScolaire === "college" && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="specialty">Année</label>
+              <select
+                id="specialty"
+                className="form-input"
+                required
+                name="specialty"
+                value={form.specialty}
+                onChange={onChange}
+              >
+                <option value="">— Sélectionnez votre année —</option>
+                {getSpecialtiesForSchoolLevel("college").map((s) => (
+                  <option key={s.id} value={s.id} disabled={s.enabled === false}>
+                    {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {form.niveauScolaire === "lycee" && (
             <div className="form-group">
               <label className="form-label" htmlFor="specialty">Filière</label>
@@ -125,8 +167,8 @@ export default function SignUpPage() {
               >
                 <option value="">— Sélectionnez votre filière —</option>
                 {lyceeSpecialties.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label} — {s.labelAr}
+                  <option key={s.id} value={s.id} disabled={s.enabled === false}>
+                    {s.label} — {s.labelAr}{s.enabled === false ? " (Bientôt disponible)" : ""}
                   </option>
                 ))}
               </select>

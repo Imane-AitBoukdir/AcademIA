@@ -239,8 +239,8 @@ p { color: var(--text-secondary); }
 .hero h1 {
   margin-bottom: 1.25rem;
   color: var(--text);
-  font-size: clamp(3.25rem, 5vw, 4.9rem);
-  line-height: 1.02;
+  font-size: clamp(2.5rem, 4vw, 3.8rem);
+  line-height: 1.06;
 }
 .hero-accent {
   display: inline-block;
@@ -286,7 +286,7 @@ p { color: var(--text-secondary); }
 }
 .hero-stage-board {
   position: absolute;
-  inset: 4.5rem 2.25rem 2rem 2.25rem;
+  inset: 4.5rem 0.5rem 2rem 0.5rem;
   border-radius: 36px;
   background:
     radial-gradient(circle at top, rgba(243,106,168,0.08), transparent 34%),
@@ -296,16 +296,16 @@ p { color: var(--text-secondary); }
 }
 .hero-stage-title {
   position: absolute;
-  inset: 10rem 0 auto 0;
+  inset: 12rem 0 auto 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
   color: #3B2A61;
-  font-size: clamp(3.75rem, 6.2vw, 5.2rem);
+  font-size: clamp(2.5rem, 4.5vw, 3.5rem);
   font-weight: 700;
-  line-height: 0.9;
-  letter-spacing: -0.05em;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
   z-index: 1;
   pointer-events: none;
 }
@@ -340,9 +340,9 @@ p { color: var(--text-secondary); }
   background: rgba(255, 255, 255, 0.65);
 }
 .hero-card-purple {
-  top: -0.25rem;
-  left: -1.4rem;
-  background: #7D4CDB;
+  top: -1.5rem;
+  left: -2.5rem;
+  background: #6C47B8;
   color: #fff;
   transform: rotate(-8deg);
 }
@@ -351,18 +351,22 @@ p { color: var(--text-secondary); }
   color: rgba(255, 255, 255, 0.88);
 }
 .hero-card-gold {
-  top: 2rem;
-  right: -1.4rem;
-  background: #FFD247;
-  color: #352800;
+  top: 0.5rem;
+  right: -2.5rem;
+  background: #E8722A;
+  color: #fff;
   transform: rotate(9deg);
   animation-delay: 0.7s;
 }
+.hero-card-gold p,
+.hero-card-gold .hero-card-icon {
+  color: rgba(255, 255, 255, 0.88);
+}
 .hero-card-mint {
-  left: -0.3rem;
-  bottom: -4rem;
-  background: #EDE6FF;
-  color: #4C3A78;
+  left: -1.5rem;
+  bottom: -5.5rem;
+  background: #EDE7F6;
+  color: #4C3078;
   transform: rotate(-2deg);
   animation-delay: 1.3s;
 }
@@ -917,6 +921,11 @@ select.form-input { cursor: pointer; }
 }
 .exam-sidebar-actions {
   padding: 0.75rem 0; margin-top: auto;
+}
+.exam-sidebar-actions .btn-primary {
+  border-radius: 12px;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
 }
 .exam-pdf-name {
   text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
@@ -1670,3 +1679,45 @@ select.form-input { cursor: pointer; }
 }
 .admin-switcher-select:focus { border-color: var(--primary); }
 .admin-switcher-select:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
+
+/* ─── Disabled / "Bientôt disponible" states ─── */
+
+.subject-card--disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.6);
+  position: relative;
+}
+
+.coming-soon-badge-card {
+  position: absolute; top: 0.55rem; right: 0.55rem; z-index: 2;
+  background: var(--text-secondary); color: #fff;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 0.2rem 0.55rem; border-radius: 6px;
+}
+
+.chapter-item--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(0.5);
+  position: relative;
+}
+
+.coming-soon-badge {
+  margin-left: auto;
+  font-size: 0.62rem; font-weight: 700; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+  padding: 0.1rem 0.4rem; border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Admin eye toggle buttons */
+.admin-btn-icon.muted { opacity: 0.4; }
+.admin-spec-chip.disabled { opacity: 0.5; }
+.ecs-toggle-btn {
+  background: none; border: none; cursor: pointer; padding: 0 2px;
+  color: var(--text-secondary); display: inline-flex; align-items: center;
+  transition: color 0.15s;
+}
+.ecs-toggle-btn:hover { color: var(--primary); }
+.ecs-toggle-btn.muted { opacity: 0.45; }

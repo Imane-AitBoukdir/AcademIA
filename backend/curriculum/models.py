@@ -28,6 +28,7 @@ class SpecialtyUpdate(BaseModel):
     label: Optional[str] = None
     label_ar: Optional[str] = None
     order: Optional[int] = None
+    enabled: Optional[bool] = None
 
 
 class SubjectIn(BaseModel):
@@ -39,6 +40,7 @@ class SubjectIn(BaseModel):
 class SubjectUpdate(BaseModel):
     name: Optional[str] = None
     order: Optional[int] = None
+    enabled: Optional[bool] = None
 
 
 class ChapterIn(BaseModel):
@@ -53,6 +55,7 @@ class ChapterUpdate(BaseModel):
     name: Optional[str] = None
     semester: Optional[str] = Field(None, pattern=r"^s[12]$")
     order: Optional[int] = None
+    enabled: Optional[bool] = None
 
 
 # ── Reorder ──────────────────────────────────────────────────────────────────
@@ -73,12 +76,14 @@ class ChapterOut(BaseModel):
     name: str
     semester: str
     order: int = 0
+    enabled: bool = True
 
 
 class SubjectOut(BaseModel):
     id: str
     name: str
     order: int = 0
+    enabled: bool = True
     chapters_s1: list[ChapterOut] = []
     chapters_s2: list[ChapterOut] = []
 
@@ -89,6 +94,7 @@ class SpecialtyOut(BaseModel):
     label: str
     label_ar: str = ""
     order: int = 0
+    enabled: bool = True
     subjects: list[SubjectOut] = []
 
 

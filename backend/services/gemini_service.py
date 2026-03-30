@@ -89,11 +89,11 @@ class GeminiService:
         except Exception:
             return False
 
-    def generate(self, system_prompt: str, contents: list) -> tuple[str, str]:
+    def _call_with_retry(self, system_prompt: str, contents: list) -> str:
+        """Low-level generate with exponential-backoff retry. Returns raw text."""
         last_exc = None
 
         for attempt in range(settings.GEMINI_MAX_RETRIES + 1):
-            # Use the fast model first; fall back to the thinking model on last retry
             model = (
                 settings.GEMINI_MODEL
                 if attempt == settings.GEMINI_MAX_RETRIES
@@ -112,15 +112,7 @@ class GeminiService:
                     contents=contents,
                     config={"system_instruction": system_prompt},
                 )
-                raw = (response.text or "").strip()
-                display_text, spoken_text = self._parse_response(raw)
-
-                if self._needs_display_repair(display_text):
-                    repaired = self._repair_display_text(display_text)
-                    if repaired:
-                        display_text = repaired
-
-                return display_text, spoken_text
+                return (response.text or "").strip()
 
             except Exception as exc:
                 last_exc = exc
@@ -134,6 +126,21 @@ class GeminiService:
             f"Gemini failed after {settings.GEMINI_MAX_RETRIES} retries. "
             f"Last error: {last_exc}"
         ) from last_exc
+
+    def generate(self, system_prompt: str, contents: list) -> tuple[str, str]:
+        raw = self._call_with_retry(system_prompt, contents)
+        display_text, spoken_text = self._parse_response(raw)
+
+        if self._needs_display_repair(display_text):
+            repaired = self._repair_display_text(display_text)
+            if repaired:
+                display_text = repaired
+
+        return display_text, spoken_text
+
+    def generate_raw(self, system_prompt: str, contents: list) -> str:
+        """Generate raw text (no JSON parsing). Same retry logic as generate()."""
+        return self._call_with_retry(system_prompt, contents)
 
     def _parse_response(self, raw: str) -> tuple[str, str]:
         if raw.startswith("```json"):

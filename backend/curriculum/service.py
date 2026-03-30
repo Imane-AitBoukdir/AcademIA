@@ -95,6 +95,7 @@ async def create_specialty(data: dict):
         "label": data["label"],
         "label_ar": data.get("label_ar", ""),
         "order": data.get("order", 0),
+        "enabled": data.get("enabled", True),
     }
     await _db().specialties.insert_one(doc)
     return doc
@@ -133,6 +134,7 @@ async def create_subject(data: dict):
         "specialty_id": data["specialty_id"],
         "name": data["name"],
         "order": data.get("order", 0),
+        "enabled": data.get("enabled", True),
     }
     result = await _db().subjects.insert_one(doc)
     doc["_id"] = result.inserted_id
@@ -180,6 +182,7 @@ async def create_chapter(data: dict):
         "semester": data["semester"],
         "name": data["name"],
         "order": data.get("order", 0),
+        "enabled": data.get("enabled", True),
     }
     result = await _db().chapters.insert_one(doc)
     doc["_id"] = result.inserted_id
@@ -248,6 +251,7 @@ async def get_full_tree() -> dict:
             "name": ch["name"],
             "semester": ch["semester"],
             "order": ch.get("order", 0),
+            "enabled": ch.get("enabled", True),
         })
 
     # Index subjects by specialty_id
@@ -259,6 +263,7 @@ async def get_full_tree() -> dict:
             "id": str(subj["_id"]),
             "name": subj["name"],
             "order": subj.get("order", 0),
+            "enabled": subj.get("enabled", True),
             "chapters_s1": ch_index.get((sid, subj_norm, "s1"), []),
             "chapters_s2": ch_index.get((sid, subj_norm, "s2"), []),
         })
@@ -273,6 +278,7 @@ async def get_full_tree() -> dict:
             "label": sp["label"],
             "label_ar": sp.get("label_ar", ""),
             "order": sp.get("order", 0),
+            "enabled": sp.get("enabled", True),
             "subjects": subj_index.get(sp["_id"], []),
         })
 

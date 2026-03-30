@@ -3,7 +3,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import {
-    BookOpen, Check, ChevronDown, GripVertical,
+    BookOpen, Check, ChevronDown, Eye, EyeOff, GripVertical,
     Menu, Pencil, Plus, Shield, Trash2, X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -148,11 +148,11 @@ function ChapterList({ chapters, semester, specId, subjectNorm, onRefresh }) {
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = items.findIndex((i) => i._id === active.id);
-    const newIndex = items.findIndex((i) => i._id === over.id);
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
     const reordered = arrayMove(items, oldIndex, newIndex);
     setItems(reordered);
-    await api.reorderChapters(reordered.map((c, i) => ({ id: c._id, order: i })));
+    await api.reorderChapters(reordered.map((c, i) => ({ id: c.id, order: i })));
     onRefresh();
   };
 
@@ -174,13 +174,13 @@ function ChapterList({ chapters, semester, specId, subjectNorm, onRefresh }) {
   return (
     <div className="admin-chapter-list">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={items.map((c) => c._id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={items.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           {items.map((ch) => (
-            <SortableRow key={ch._id} id={ch._id}>
+            <SortableRow key={ch.id} id={ch.id}>
               <span className="admin-chapter-name">
-                <InlineEdit value={ch.name} onSave={(v) => handleRename(ch._id, v)} />
+                <InlineEdit value={ch.name} onSave={(v) => handleRename(ch.id, v)} />
               </span>
-              <DeleteBtn onConfirm={() => handleDelete(ch._id)} label={ch.name} />
+              <DeleteBtn onConfirm={() => handleDelete(ch.id)} label={ch.name} />
             </SortableRow>
           ))}
         </SortableContext>
@@ -194,11 +194,11 @@ function ChapterList({ chapters, semester, specId, subjectNorm, onRefresh }) {
 
 function SubjectRow({ subject, specId, onRefresh, onSelect, isSelected }) {
   const handleRename = async (name) => {
-    await api.updateSubject(subject._id, { name });
+    await api.updateSubject(subject.id, { name });
     onRefresh();
   };
   const handleDelete = async () => {
-    await api.deleteSubject(subject._id);
+    await api.deleteSubject(subject.id);
     onRefresh();
   };
   const count = (subject.chapters_s1?.length || 0) + (subject.chapters_s2?.length || 0);
@@ -211,6 +211,17 @@ function SubjectRow({ subject, specId, onRefresh, onSelect, isSelected }) {
       <BookOpen size={14} className="admin-node-icon" />
       <InlineEdit value={subject.name} onSave={handleRename} />
       <span className="admin-node-badge">{count} ch.</span>
+      <button
+        type="button"
+        className={`admin-btn-icon${subject.enabled === false ? " muted" : ""}`}
+        title={subject.enabled === false ? "Activer" : "Désactiver"}
+        onClick={(e) => {
+          e.stopPropagation();
+          api.updateSubject(subject.id, { enabled: !(subject.enabled !== false) }).then(onRefresh);
+        }}
+      >
+        {subject.enabled === false ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
       <DeleteBtn onConfirm={handleDelete} label={subject.name} />
     </div>
   );
@@ -297,7 +308,7 @@ export default function AdminPage() {
   // Keep selectedSubject in sync after refresh
   useEffect(() => {
     if (selectedSubject && subjects.length) {
-      const updated = subjects.find((s) => s._id === selectedSubject._id);
+      const updated = subjects.find((s) => s.id === selectedSubject.id);
       if (updated) setSelectedSubject(updated);
       else setSelectedSubject(null);
     }
@@ -409,8 +420,16 @@ export default function AdminPage() {
                 <span className="admin-spec-strip-label">Filières de « {currentLevel.label} »</span>
                 <div className="admin-spec-chips">
                   {specialties.map((spec) => (
-                    <span key={spec.id} className={`admin-spec-chip${spec.id === selectedSpecId ? " active" : ""}`}>
+                    <span key={spec.id} className={`admin-spec-chip${spec.id === selectedSpecId ? " active" : ""}${spec.enabled === false ? " disabled" : ""}`}>
                       <InlineEdit value={spec.label} onSave={(v) => handleRenameSpecialty(spec, v)} />
+                      <button
+                        type="button"
+                        className={`admin-btn-icon${spec.enabled === false ? " muted" : ""}`}
+                        title={spec.enabled === false ? "Activer" : "Désactiver"}
+                        onClick={() => api.updateSpecialty(spec.id, { enabled: !(spec.enabled !== false) }).then(refresh)}
+                      >
+                        {spec.enabled === false ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
                       <DeleteBtn onConfirm={() => handleDeleteSpecialty(spec)} label={spec.label} />
                     </span>
                   ))}
@@ -434,12 +453,12 @@ export default function AdminPage() {
                   <div className="admin-subject-list">
                     {subjects.map((subj) => (
                       <SubjectRow
-                        key={subj._id}
+                        key={subj.id}
                         subject={subj}
                         specId={currentSpec.id}
                         onRefresh={refresh}
                         onSelect={setSelectedSubject}
-                        isSelected={selectedSubject?._id === subj._id}
+                        isSelected={selectedSubject?.id === subj.id}
                       />
                     ))}
                   </div>

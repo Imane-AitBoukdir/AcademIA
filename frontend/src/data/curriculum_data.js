@@ -41,7 +41,11 @@ function _buildCache(tree) {
         id: spec.id,
         label: spec.label,
         labelAr: spec.label_ar || "",
-        subjects: (spec.subjects || []).map((s) => s.name),
+        enabled: spec.enabled !== false,
+        subjects: (spec.subjects || []).map((s) => ({
+          name: s.name,
+          enabled: s.enabled !== false,
+        })),
         schoolLevel: level.id,
       };
       _allSpecialties.push(flat);
@@ -52,8 +56,16 @@ function _buildCache(tree) {
       for (const subj of spec.subjects || []) {
         const key = `${spec.id}|${_normalize(subj.name)}`;
         _chapterCache[key] = {
-          s1: (subj.chapters_s1 || []).map((ch) => ({ _id: ch.id, name: ch.name })),
-          s2: (subj.chapters_s2 || []).map((ch) => ({ _id: ch.id, name: ch.name })),
+          s1: (subj.chapters_s1 || []).map((ch) => ({
+            _id: ch.id,
+            name: ch.name,
+            enabled: ch.enabled !== false,
+          })),
+          s2: (subj.chapters_s2 || []).map((ch) => ({
+            _id: ch.id,
+            name: ch.name,
+            enabled: ch.enabled !== false,
+          })),
         };
       }
     }

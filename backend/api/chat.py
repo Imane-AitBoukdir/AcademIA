@@ -14,6 +14,7 @@ from services.session_manager import session_manager
 from services.gemini_service import gemini_service
 from services.tts_service import tts_service
 from services.prompt_builder import build_system_prompt, build_contents, summarize_old_turns
+from services.file_cache import get_or_upload
 
 router = APIRouter(tags=["chat"])
 
@@ -30,6 +31,8 @@ async def chat_endpoint(
     session_id:    Optional[str]  = Form(None),
     reference_pdf: Optional[UploadFile] = File(None),
     file:          Optional[UploadFile] = File(None),
+    reference_pdf_id: Optional[str] = Form(None),
+    exercise_pdf_id:  Optional[str] = Form(None),
 ):
     # Validate mode
     valid_modes = {"course", "exercise", "mock_exam", "general"}
@@ -77,7 +80,26 @@ async def chat_endpoint(
         print(f"[chat] File uploaded → {file.filename} | {file_uri}")
 
     # ── 2b. Handle reference PDF (course/exercise PDF auto-attached) ─────────
-    if reference_pdf and reference_pdf.filename:
+    # Prefer cached Gemini URI via GridFS file ID (avoids re-uploading blob)
+    if reference_pdf_id:
+        existing_names = session.get_file_names()
+        ref_name = f"course_{reference_pdf_id}.pdf"
+        if ref_name not in existing_names:
+            try:
+                ref_uri = await get_or_upload(reference_pdf_id)
+                if ref_uri:
+                    session.add_file(
+                        file_uri=ref_uri,
+                        name=ref_name,
+                        mime_type="application/pdf",
+                        description="Course PDF (cached)",
+                    )
+                    session.reference_pdfs.append(ref_uri)
+                    print(f"[chat] Reference PDF from cache → {ref_name} | {ref_uri}")
+            except Exception as e:
+                print(f"[chat] Cache lookup failed for reference_pdf_id={reference_pdf_id}: {e}")
+
+    elif reference_pdf and reference_pdf.filename:
         existing_names = session.get_file_names()
         if reference_pdf.filename not in existing_names:
             if reference_pdf.content_type in settings.ALLOWED_MIME_TYPES:
@@ -96,6 +118,24 @@ async def chat_endpoint(
                     )
                     session.reference_pdfs.append(ref_uri)
                     print(f"[chat] Reference PDF uploaded → {reference_pdf.filename} | {ref_uri}")
+
+    # ── 2c. Handle exercise PDF via cache ────────────────────────────────────
+    if exercise_pdf_id:
+        existing_names = session.get_file_names()
+        ex_name = f"exercise_{exercise_pdf_id}.pdf"
+        if ex_name not in existing_names:
+            try:
+                ex_uri = await get_or_upload(exercise_pdf_id)
+                if ex_uri:
+                    session.add_file(
+                        file_uri=ex_uri,
+                        name=ex_name,
+                        mime_type="application/pdf",
+                        description="Exercise PDF (cached)",
+                    )
+                    print(f"[chat] Exercise PDF from cache → {ex_name} | {ex_uri}")
+            except Exception as e:
+                print(f"[chat] Cache lookup failed for exercise_pdf_id={exercise_pdf_id}: {e}")
 
     # ── 3. Verify existing session files are still alive (48h TTL) ───────────
     live_files = []

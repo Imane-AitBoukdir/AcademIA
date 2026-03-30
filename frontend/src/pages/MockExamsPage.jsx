@@ -13,6 +13,7 @@ import {
     getChaptersForSubject,
     getPdfUrl,
     normalizeValue,
+    preUploadPdfs,
     uploadPdf,
 } from "../lib/curriculum";
 
@@ -60,6 +61,9 @@ export default function MockExamsPage() {
   const [generateMode, setGenerateMode] = useState(false);
   const [selectedChapters, setSelectedChapters] = useState([]);
   const [generating, setGenerating] = useState(false);
+
+  /* ── Pre-uploaded Gemini URIs (cache warming) ── */
+  const [cachedUris, setCachedUris] = useState({});
 
   /* ── Resize handler for sidebar panel ── */
   const handlePanelResizeMouseDown = useCallback((e) => {
@@ -113,6 +117,13 @@ export default function MockExamsPage() {
 
   useEffect(() => refreshExamPdfs(), [refreshExamPdfs]);
 
+  /* ── Pre-upload PDFs to Gemini on page load (fire-and-forget) ── */
+  useEffect(() => {
+    preUploadPdfs(specialty, rawSubject)
+      .then((data) => { if (data?.cached) setCachedUris(data.cached); })
+      .catch(() => {});
+  }, [specialty, rawSubject]);
+
   /* ── Upload handler (subject-level exam) ── */
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -154,17 +165,22 @@ export default function MockExamsPage() {
 
       // Fetch course PDF of first selected chapter as content reference
       let coursePdfId = null;
+      let courseUri = null;
       try {
         const first = selectedChapters[0];
         const coursePdfs = await fetchChapterPdfs("courses", specialty, rawSubject, first.semester, first.name);
-        if (coursePdfs.length > 0) coursePdfId = coursePdfs[0].id;
+        if (coursePdfs.length > 0) {
+          coursePdfId = coursePdfs[0].id;
+          courseUri = cachedUris[coursePdfId] || null;
+        }
       } catch { /* no course PDF available */ }
 
       // Use currently viewed exam as style reference
       const examPdfId = examPdfs[selectedExamIndex]?.id || null;
+      const examUri = examPdfId ? (cachedUris[examPdfId] || null) : null;
 
       const lang = localStorage.getItem("academia_lang") || "fr";
-      await generateExam(specialty, rawSubject, chapterNames, lang, coursePdfId, examPdfId);
+      await generateExam(specialty, rawSubject, chapterNames, lang, coursePdfId, examPdfId, courseUri, examUri);
       refreshExamPdfs();
       setGenerateMode(false);
       setSelectedChapters([]);

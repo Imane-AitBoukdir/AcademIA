@@ -25,6 +25,15 @@ async def connect():
     await _db.sessions.create_index("expires_at", expireAfterSeconds=0)
     # Unique email for users
     await _db.users.create_index("email", unique=True)
+    # TTL index: auto-delete expired Gemini file cache entries
+    await _db.gemini_file_cache.create_index("expires_at", expireAfterSeconds=0)
+
+    # Backfill: ensure all curriculum items have an `enabled` field
+    _missing = {"enabled": {"$exists": False}}
+    _set_true = {"$set": {"enabled": True}}
+    await _db.specialties.update_many(_missing, _set_true)
+    await _db.subjects.update_many(_missing, _set_true)
+    await _db.chapters.update_many(_missing, _set_true)
 
     print(f"[db] Connected to MongoDB → {settings.MONGODB_URI} / {settings.MONGODB_DB}")
 

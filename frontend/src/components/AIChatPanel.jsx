@@ -344,32 +344,43 @@ export default function AIChatPanel({
       }
 
       // Attach reference PDF on first message only
+      // Prefer sending GridFS file ID (uses server-side cache) over fetching blob
       if (!referenceSent && referencePdfPath) {
-        try {
-          const pdfResponse = await fetch(referencePdfPath);
-          if (pdfResponse.ok) {
-            const pdfBlob = await pdfResponse.blob();
-            const pdfName = referencePdfPath.split("/").pop() || "course.pdf";
-            formData.append("reference_pdf", pdfBlob, pdfName);
+        const refMatch = referencePdfPath.match(/\/pdfs\/file\/([a-f0-9]{24})/i);
+        if (refMatch) {
+          formData.append("reference_pdf_id", refMatch[1]);
+        } else {
+          try {
+            const pdfResponse = await fetch(referencePdfPath);
+            if (pdfResponse.ok) {
+              const pdfBlob = await pdfResponse.blob();
+              const pdfName = referencePdfPath.split("/").pop() || "course.pdf";
+              formData.append("reference_pdf", pdfBlob, pdfName);
+            }
+          } catch (err) {
+            console.warn("Could not attach reference PDF:", err);
           }
-        } catch (err) {
-          console.warn("Could not attach reference PDF:", err);
         }
       }
 
       // Also attach exercise PDF on first message if in exercise mode
       if (!referenceSent && exercisePdfPath) {
-        try {
-          const exPdfResponse = await fetch(exercisePdfPath);
-          if (exPdfResponse.ok) {
-            const exPdfBlob = await exPdfResponse.blob();
-            const exPdfName =
-              exercisePdfPath.split("/").pop() || "exercice.pdf";
-            // Send as a regular file upload
-            formData.append("file", exPdfBlob, exPdfName);
+        const exMatch = exercisePdfPath.match(/\/pdfs\/file\/([a-f0-9]{24})/i);
+        if (exMatch) {
+          formData.append("exercise_pdf_id", exMatch[1]);
+        } else {
+          try {
+            const exPdfResponse = await fetch(exercisePdfPath);
+            if (exPdfResponse.ok) {
+              const exPdfBlob = await exPdfResponse.blob();
+              const exPdfName =
+                exercisePdfPath.split("/").pop() || "exercice.pdf";
+              // Send as a regular file upload
+              formData.append("file", exPdfBlob, exPdfName);
+            }
+          } catch (err) {
+            console.warn("Could not attach exercise PDF:", err);
           }
-        } catch (err) {
-          console.warn("Could not attach exercise PDF:", err);
         }
       }
 
@@ -543,20 +554,20 @@ export default function AIChatPanel({
           <div className="aichat-empty">
             <Bot size={32} className="aichat-empty-icon" />
             <h3>
-              {mode === "course" && "Ask me anything about this lesson"}
-              {mode === "exercise" && "Submit your work — I'll guide you"}
-              {mode === "mock_exam" && "I'll generate practice exams for you"}
-              {mode === "general" && "What would you like to learn today?"}
+              {mode === "course" && "Pose-moi toutes tes questions sur ce cours"}
+              {mode === "exercise" && "Envoie ton travail — je te guide pas à pas"}
+              {mode === "mock_exam" && "Je génère des examens blancs pour toi"}
+              {mode === "general" && "Qu'est-ce que tu voudrais apprendre aujourd'hui ?"}
             </h3>
             <p>
               {mode === "course" &&
-                "I have access to your course PDF. Ask questions, request explanations, or explore concepts."}
+                "J'ai accès à ton cours en PDF. Pose des questions, demande des explications ou explore de nouveaux concepts."}
               {mode === "exercise" &&
-                "Share your answers and I'll correct them, grade your work, and guide you step-by-step."}
+                "Partage tes réponses et je les corrige, note ton travail et te guide étape par étape."}
               {mode === "mock_exam" &&
-                "Tell me which topics to cover and I'll create realistic exam questions with a grading rubric."}
+                "Dis-moi quels chapitres couvrir et je crée des questions d'examen réalistes avec un barème."}
               {mode === "general" &&
-                "I can help with any subject. Upload homework, ask questions, or explore new topics."}
+                "Je peux t'aider dans toutes les matières. Envoie tes devoirs, pose des questions ou explore de nouveaux sujets."}
             </p>
           </div>
         )}

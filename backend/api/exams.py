@@ -1,7 +1,8 @@
 """
 api/exams.py
 ------------
-POST /api/generate-exam — Generate a mock exam PDF via Gemini + LaTeX.
+POST /api/generate-exam   — Generate a mock exam PDF via Gemini + LaTeX.
+POST /api/pre-upload-pdfs — Pre-upload subject PDFs to Gemini (cache warming).
 """
 
 import os
@@ -10,41 +11,64 @@ import subprocess
 import tempfile
 from typing import Optional
 
-from bson import ObjectId
 from fastapi import APIRouter, Form, HTTPException
 from google.genai import types
 
 import database
-from config import settings
 from services.gemini_service import gemini_service
+from services.file_cache import get_or_upload, pre_upload_pdfs
 from pdfs.service import store_pdf
 
 router = APIRouter(tags=["exams"])
 
 _EXAM_SYSTEM_PROMPT = """
-You are an expert exam generator for Moroccan students.
-Generate a complete exam in LaTeX format.
+You are an expert exam generator for the Moroccan education system (Programme National Marocain).
 
-RULES:
+You have deep knowledge of:
+- The official Moroccan curriculum for every level: primaire, collège, lycée (tronc commun,
+  1ère bac, 2ème bac — all specialties: Sciences Mathématiques, Sciences Expérimentales,
+  Sciences Économiques, Lettres et Sciences Humaines, etc.)
+- The style, structure, and difficulty of official Moroccan regional and national exams
+  (examens régionaux, examens nationaux du baccalauréat)
+- Standard exam formatting: header with subject/level/duration/coefficient, numbered exercises
+  (Exercice 1, Exercice 2…) with point allocations, and a barème de notation
+- Question types used in Moroccan exams: QCM, Vrai/Faux justifié, questions de cours,
+  applications directes, problèmes, démonstrations, analyses de documents
+
+TASK: Generate a complete exam as a LaTeX (.tex) document.
+
+LaTeX RULES:
 - Output ONLY valid LaTeX code. No markdown, no explanations, no code fences.
 - The document MUST start with \\documentclass and end with \\end{{document}}.
-- Use ONLY these packages: amsmath, amssymb, geometry, enumitem, fancyhdr, inputenc, fontenc, babel.
+- Use ONLY these packages: amsmath, amssymb, geometry, enumitem, fancyhdr, inputenc,
+  fontenc, babel, array, multirow, tabularx.
 - Do NOT use any custom or exotic packages.
-- Include: exam header (subject, level, duration estimate), exercises with point allocations.
-- Vary question types: MCQ, short answer, calculations, proofs, analysis.
-- Match the style and difficulty of Moroccan official exams.
-- Include a grading rubric (bareme) at the end.
 - Use utf8 inputenc for French accents.
+
+CONTENT RULES:
+- Match the exact difficulty and depth appropriate for the student's level.
+- Structure the exam like a real Moroccan official exam for that level.
+- Include a realistic duration estimate and point total (e.g., /20 or /40).
+- Vary question types within the exam.
+- Include a barème (grading rubric) showing point breakdown per question.
+- If reference PDFs are attached, use them as supplementary material to align questions
+  with the specific chapters being studied, but always rely on your knowledge of the
+  Moroccan programme to ensure correctness and appropriate difficulty.
 """.strip()
 
 
-async def _read_gridfs_bytes(file_id: str) -> tuple[bytes, str]:
-    """Read file bytes + filename from GridFS by ID."""
-    gridfs = database.get_gridfs()
-    oid = ObjectId(file_id)
-    grid_out = await gridfs.open_download_stream(oid)
-    data = await grid_out.read()
-    return data, grid_out.filename
+@router.post("/api/pre-upload-pdfs")
+async def pre_upload_pdfs_endpoint(
+    specialty: str = Form(...),
+    subject: str = Form(...),
+):
+    """Pre-upload all course + exam PDFs for a subject to Gemini (cache warming)."""
+    try:
+        cached = await pre_upload_pdfs(specialty, subject)
+        return {"cached": cached, "count": len(cached)}
+    except Exception as e:
+        print(f"[pre-upload] Error: {e}")
+        return {"cached": {}, "count": 0}
 
 
 @router.post("/api/generate-exam")
@@ -56,42 +80,62 @@ async def generate_exam(
     language: str = Form("fr"),
     course_pdf_id: Optional[str] = Form(None),
     exam_pdf_id: Optional[str] = Form(None),
+    course_uri: Optional[str] = Form(None),
+    exam_uri: Optional[str] = Form(None),
 ):
     # ── 1. Prepare Gemini prompt parts ────────────────────────────────────────
     prompt_parts = []
     has_course = False
     has_exam = False
 
-    if course_pdf_id:
+    # Course PDF — prefer pre-cached URI, fall back to upload
+    if course_uri:
+        prompt_parts.append(types.Part.from_uri(file_uri=course_uri, mime_type="application/pdf"))
+        has_course = True
+    elif course_pdf_id:
         try:
-            data, fname = await _read_gridfs_bytes(course_pdf_id)
-            uri, _ = await gemini_service.upload_file(data, fname, "application/pdf")
-            prompt_parts.append(types.Part.from_uri(file_uri=uri, mime_type="application/pdf"))
-            has_course = True
+            uri = await get_or_upload(course_pdf_id)
+            if uri:
+                prompt_parts.append(types.Part.from_uri(file_uri=uri, mime_type="application/pdf"))
+                has_course = True
         except Exception as e:
             print(f"[generate-exam] Failed to load course PDF: {e}")
 
-    if exam_pdf_id:
+    # Exam PDF — prefer pre-cached URI, fall back to upload
+    if exam_uri:
+        prompt_parts.append(types.Part.from_uri(file_uri=exam_uri, mime_type="application/pdf"))
+        has_exam = True
+    elif exam_pdf_id:
         try:
-            data, fname = await _read_gridfs_bytes(exam_pdf_id)
-            uri, _ = await gemini_service.upload_file(data, fname, "application/pdf")
-            prompt_parts.append(types.Part.from_uri(file_uri=uri, mime_type="application/pdf"))
-            has_exam = True
+            uri = await get_or_upload(exam_pdf_id)
+            if uri:
+                prompt_parts.append(types.Part.from_uri(file_uri=uri, mime_type="application/pdf"))
+                has_exam = True
         except Exception as e:
             print(f"[generate-exam] Failed to load exam PDF: {e}")
 
     lang_name = "French" if language == "fr" else "Arabic"
     prompt_text = (
-        f"Generate a complete mock exam in LaTeX (.tex) format for:\n"
+        f"Generate a complete mock exam in LaTeX (.tex) format.\n\n"
+        f"STUDENT CONTEXT:\n"
+        f"- Level: {level} (in the Moroccan education system)\n"
         f"- Subject: {subject}\n"
-        f"- Level: {level}\n"
         f"- Chapters to cover: {chapters}\n"
-        f"- Language: {lang_name}\n"
+        f"- Exam language: {lang_name}\n\n"
+        f"Use your knowledge of the Moroccan national curriculum (Programme National) "
+        f"for this level and subject. The exam MUST match the real difficulty, style, "
+        f"and format of official Moroccan exams for {level}.\n"
     )
     if has_course:
-        prompt_text += "A reference course PDF is attached — base the exam content on it.\n"
+        prompt_text += (
+            "\nA reference course PDF is attached — use it to align questions "
+            "with the specific chapter content the student has studied.\n"
+        )
     if has_exam:
-        prompt_text += "A reference exam PDF is attached — match its style, format, and difficulty.\n"
+        prompt_text += (
+            "\nA reference exam PDF is attached — match its formatting style, "
+            "question structure, and difficulty level.\n"
+        )
     prompt_text += (
         "\nOutput ONLY the complete LaTeX document code, "
         "starting with \\documentclass and ending with \\end{document}."
@@ -100,12 +144,10 @@ async def generate_exam(
 
     # ── 2. Call Gemini ────────────────────────────────────────────────────────
     try:
-        response = gemini_service.client.models.generate_content(
-            model=settings.GEMINI_MODEL,
+        latex_code = gemini_service.generate_raw(
+            system_prompt=_EXAM_SYSTEM_PROMPT,
             contents=prompt_parts,
-            config={"system_instruction": _EXAM_SYSTEM_PROMPT},
         )
-        latex_code = (response.text or "").strip()
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"AI generation failed: {str(e)}")
 
