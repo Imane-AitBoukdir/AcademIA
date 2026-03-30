@@ -8,7 +8,7 @@
  * cache that is populated once at app startup via loadCurriculum().
  */
 
-const API_URL = "http://localhost:8000";
+import { API_URL } from "../config";
 
 // ── Module-level cache ──────────────────────────────────────────────────────
 

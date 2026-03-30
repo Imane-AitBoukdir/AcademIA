@@ -67,7 +67,7 @@ export function buildPdfPath(type, specialty, subject, semester, lesson, filenam
 
 // ── API-driven PDF helpers (GridFS) ─────────────────────────────────────────
 
-const API_URL = "http://localhost:8000";
+import { API_URL } from "../config";
 
 /**
  * Fetch the list of PDFs for a chapter from the backend (GridFS).

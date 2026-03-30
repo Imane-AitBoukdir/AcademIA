@@ -4,9 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
+import { API_URL } from "../config";
 import "./AIChatPanel.css";
-
-const API_URL = "http://localhost:8000";
 
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;

@@ -1,4 +1,6 @@
-const API = "http://localhost:8000/api/curriculum";
+import { API_URL } from "../config";
+
+const API = `${API_URL}/api/curriculum`;
 
 function adminHeaders() {
   const user = JSON.parse(localStorage.getItem("academiaUser") || "{}");

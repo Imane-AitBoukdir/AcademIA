@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { API_URL } from "../config";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ export default function SignInPage() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:8000/api/auth/signin", {
+      const res = await fetch(`${API_URL}/api/auth/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
