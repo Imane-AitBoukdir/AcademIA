@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Mail, Menu, Phone, Save, User } from "lucide-react";
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
+import { getSpecialtiesForSchoolLevel, getSpecialtyById, lyceeSpecialties } from "../lib/curriculum";
 
 function getUser() {
   return JSON.parse(localStorage.getItem("academiaUser") || "null") || {
@@ -23,7 +24,13 @@ export default function ProfilPage() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setUser((u) => ({ ...u, [name]: value }));
+    setUser((u) => {
+      const next = { ...u, [name]: value };
+      if (name === "niveauScolaire") {
+        next.specialty = "";
+      }
+      return next;
+    });
     setSaved(false);
   };
 
@@ -65,7 +72,7 @@ export default function ProfilPage() {
             <div>
               <h2 className="profil-name">{user.prenom} {user.nom}</h2>
               <p className="profil-level">{levelLabels[user.niveauScolaire] || user.niveauScolaire}
-                {user.specialty ? ` — ${user.specialty.replaceAll("_", " ")}` : ""}
+                {user.specialty ? ` — ${getSpecialtyById(user.specialty)?.label || user.specialty.replaceAll("_", " ")}` : ""}
               </p>
             </div>
           </div>
@@ -107,6 +114,48 @@ export default function ProfilPage() {
                 <option value="lycee">Lycée</option>
               </select>
             </label>
+
+            {user.niveauScolaire === "primaire" && (
+              <label className="profil-label">
+                Année
+                <select name="specialty" value={user.specialty} onChange={onChange} className="profil-input">
+                  <option value="">— Sélectionnez votre année —</option>
+                  {getSpecialtiesForSchoolLevel("primaire").map((s) => (
+                    <option key={s.id} value={s.id} disabled={s.enabled === false}>
+                      {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {user.niveauScolaire === "college" && (
+              <label className="profil-label">
+                Année
+                <select name="specialty" value={user.specialty} onChange={onChange} className="profil-input">
+                  <option value="">— Sélectionnez votre année —</option>
+                  {getSpecialtiesForSchoolLevel("college").map((s) => (
+                    <option key={s.id} value={s.id} disabled={s.enabled === false}>
+                      {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {user.niveauScolaire === "lycee" && (
+              <label className="profil-label">
+                Filière
+                <select name="specialty" value={user.specialty} onChange={onChange} className="profil-input">
+                  <option value="">— Sélectionnez votre filière —</option>
+                  {lyceeSpecialties.map((s) => (
+                    <option key={s.id} value={s.id} disabled={s.enabled === false}>
+                      {s.label} — {s.labelAr}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <button type="submit" className="profil-save-btn">
               <Save size={16} />
