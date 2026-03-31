@@ -26,10 +26,42 @@ function PublicLayout({ children }) {
 
 export default function App() {
 	const [ready, setReady] = useState(false);
+	const [loadError, setLoadError] = useState(false);
 
-	useEffect(() => {
-		loadCurriculum().then(() => setReady(true)).catch(() => setReady(true));
-	}, []);
+	const tryLoad = () => {
+		setLoadError(false);
+		loadCurriculum()
+			.then(() => setReady(true))
+			.catch(() => setLoadError(true));
+	};
+
+	useEffect(() => { tryLoad(); }, []);
+
+	if (loadError) {
+		return (
+			<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg-primary, #f9fafb)" }}>
+				<div style={{ textAlign: "center", maxWidth: 360 }}>
+					<p style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 8, color: "var(--text-primary, #1a1a2e)" }}>
+						Impossible de charger les données
+					</p>
+					<p style={{ fontSize: "0.9rem", color: "var(--text-secondary, #666)", marginBottom: 16 }}>
+						Le serveur est peut-être en cours de démarrage. Veuillez réessayer.
+					</p>
+					<button
+						type="button"
+						onClick={tryLoad}
+						style={{
+							padding: "0.5rem 1.5rem", borderRadius: 8, border: "none",
+							background: "var(--primary, #6C47B8)", color: "#fff",
+							fontWeight: 600, cursor: "pointer", fontSize: "0.9rem",
+						}}
+					>
+						Réessayer
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	if (!ready) {
 		return (
