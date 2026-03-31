@@ -1112,6 +1112,20 @@ select.form-input { cursor: pointer; }
 }
 .pdf-upload-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(108, 71, 184, 0.05); }
 
+.pdf-drop-zone {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.8rem;
+  font-weight: 500; cursor: pointer; border: 1.5px dashed var(--border);
+  background: none; color: var(--text-secondary); transition: all 0.18s ease;
+  margin-left: auto; white-space: nowrap;
+}
+.pdf-drop-zone:hover { border-color: var(--primary); color: var(--primary); background: rgba(108, 71, 184, 0.05); }
+.pdf-drop-zone.dragging {
+  border-color: var(--primary); color: var(--primary);
+  background: rgba(108, 71, 184, 0.08);
+  border-style: solid;
+}
+
 .pdf-tab.deletable { position: relative; padding-right: 1.4rem; }
 .pdf-tab-x {
   position: absolute; top: -4px; right: -4px;

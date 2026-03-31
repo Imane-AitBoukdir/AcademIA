@@ -113,12 +113,28 @@ export default function CoursePage() {
 
   useEffect(() => refreshPdfs(), [refreshPdfs]);
 
+  const [dragging, setDragging] = useState(false);
+
+  const doUpload = async (file) => {
+    if (!file || file.type !== "application/pdf") return;
+    await uploadPdf(file, "courses", specialty, rawSubject, selectedChapter.semester, selectedChapter.name);
+    refreshPdfs();
+  };
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadPdf(file, "courses", specialty, rawSubject, selectedChapter.semester, selectedChapter.name);
-    refreshPdfs();
+    await doUpload(file);
     fileInputRef.current.value = "";
+  };
+
+  const onDragOver = (e) => { e.preventDefault(); setDragging(true); };
+  const onDragLeave = () => setDragging(false);
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    doUpload(file);
   };
 
   const handleDelete = async (fileId) => {
@@ -266,9 +282,16 @@ export default function CoursePage() {
                       ))}
                     </div>
                   )}
-                  <button className="pdf-upload-btn" type="button" onClick={() => fileInputRef.current?.click()}>
-                    <Upload size={14} /> Importer un PDF
-                  </button>
+                  <div
+                    className={`pdf-drop-zone${dragging ? " dragging" : ""}`}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={14} />
+                    {dragging ? "Déposez le PDF ici" : "Importer un PDF (cliquez ou glissez)"}
+                  </div>
                   <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleUpload} />
                 </div>
                 {currentPdfUrl ? (
