@@ -255,7 +255,12 @@ export default function CoursePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
             >
-              <div className="pdf-viewer-area">
+              <div
+                className={`pdf-viewer-area${dragging ? " pdf-viewer-dragging" : ""}`}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+              >
                 <div className="pdf-toolbar">
                   {pdfList.length > 0 && (
                     <div className="pdf-tabs">
@@ -282,16 +287,9 @@ export default function CoursePage() {
                       ))}
                     </div>
                   )}
-                  <div
-                    className={`pdf-drop-zone${dragging ? " dragging" : ""}`}
-                    onDragOver={onDragOver}
-                    onDragLeave={onDragLeave}
-                    onDrop={onDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload size={14} />
-                    {dragging ? "Déposez le PDF ici" : "Importer un PDF (cliquez ou glissez)"}
-                  </div>
+                  <button className="pdf-upload-btn" type="button" onClick={() => fileInputRef.current?.click()}>
+                    <Upload size={14} /> Importer un PDF
+                  </button>
                   <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleUpload} />
                 </div>
                 {currentPdfUrl ? (
