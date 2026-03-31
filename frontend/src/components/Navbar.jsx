@@ -29,13 +29,13 @@ export default function Navbar() {
 
         <div className={`navbar-links${open ? " open" : ""}`}>
           <button className="navbar-link" type="button" onClick={() => scrollTo("features")}>
-            Features
+            Fonctionnalités
           </button>
           <button className="navbar-link" type="button" onClick={() => scrollTo("how-it-works")}>
-            How it Works
+            Comment ça marche
           </button>
           <button className="navbar-link" type="button" onClick={() => scrollTo("ai-tutor")}>
-            AI Tutor
+            Tuteur IA
           </button>
           <div className="navbar-divider" />
           <Link to="/signin" className="navbar-link" onClick={() => setOpen(false)}>
