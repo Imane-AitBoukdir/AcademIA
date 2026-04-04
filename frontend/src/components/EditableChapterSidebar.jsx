@@ -10,6 +10,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { Check, Eye, EyeOff, FileText, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLanguage } from "../i18n";
 import * as api from "../lib/admin_api";
 import { normalizeValue, reloadCurriculum } from "../lib/curriculum";
 
@@ -55,13 +56,13 @@ function InlineRename({ value, onSave }) {
   );
 }
 
-function DeleteConfirm({ onConfirm }) {
+function DeleteConfirm({ onConfirm, t }) {
   const [confirming, setConfirming] = useState(false);
   if (confirming) {
     return (
       <span className="ecs-delete-confirm" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="ecs-yes" onClick={() => { onConfirm(); setConfirming(false); }}>Oui</button>
-        <button type="button" className="ecs-no" onClick={() => setConfirming(false)}>Non</button>
+        <button type="button" className="ecs-yes" onClick={() => { onConfirm(); setConfirming(false); }}>{t("chapterSidebar.yes")}</button>
+        <button type="button" className="ecs-no" onClick={() => setConfirming(false)}>{t("chapterSidebar.no")}</button>
       </span>
     );
   }
@@ -72,14 +73,14 @@ function DeleteConfirm({ onConfirm }) {
   );
 }
 
-function AddChapterBtn({ onAdd }) {
+function AddChapterBtn({ onAdd, t }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
 
   if (!open) {
     return (
       <button type="button" className="ecs-add-btn" onClick={() => setOpen(true)}>
-        <Plus size={12} /> Ajouter
+        <Plus size={12} /> {t("chapterSidebar.add")}
       </button>
     );
   }
@@ -87,7 +88,7 @@ function AddChapterBtn({ onAdd }) {
   const submit = () => { if (name.trim()) { onAdd(name.trim()); setName(""); setOpen(false); } };
   return (
     <div className="ecs-add-form" onClick={(e) => e.stopPropagation()}>
-      <input autoFocus placeholder="Nom du chapitre" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") setOpen(false); }} />
+      <input autoFocus placeholder={t("chapterSidebar.chapterName")} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") setOpen(false); }} />
       <button type="button" onClick={submit}><Check size={12} /></button>
       <button type="button" onClick={() => { setName(""); setOpen(false); }}><X size={12} /></button>
     </div>
@@ -96,7 +97,7 @@ function AddChapterBtn({ onAdd }) {
 
 // ── Semester block (admin: sortable, student: read-only) ────────────────────
 
-function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, isAdmin, specialty, rawSubject, onChanged, marginTop }) {
+function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, isAdmin, specialty, rawSubject, onChanged, marginTop, t }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [items, setItems] = useState(chapters);
   useEffect(() => setItems(chapters), [chapters]);
@@ -155,7 +156,7 @@ function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, i
           >
             <FileText size={14} />
             <span>{ch.name}</span>
-            {ch.enabled === false && <span className="coming-soon-badge">Bientôt disponible</span>}
+            {ch.enabled === false && <span className="coming-soon-badge">{t("chapterSidebar.comingSoon")}</span>}
           </button>
         ))}
       </>
@@ -181,20 +182,20 @@ function SemesterBlock({ semester, label, chapters, selectedChapter, onSelect, i
                   <button
                     type="button"
                     className={`ecs-toggle-btn${ch.enabled === false ? " muted" : ""}`}
-                    title={ch.enabled === false ? "Activer" : "Désactiver"}
+                    title={ch.enabled === false ? t("chapterSidebar.enable") : t("chapterSidebar.disable")}
                     onClick={(e) => { e.stopPropagation(); handleToggleEnabled(ch._id, ch.enabled !== false); }}
                   >
                     {ch.enabled === false ? <EyeOff size={11} /> : <Eye size={11} />}
                   </button>
                   <InlineRename value={ch.name} onSave={(v) => handleRename(ch._id, v)} />
-                  <DeleteConfirm onConfirm={() => handleDelete(ch._id)} />
+                  <DeleteConfirm onConfirm={() => handleDelete(ch._id)} t={t} />
                 </span>
               </button>
             </SortableChapter>
           ))}
         </SortableContext>
       </DndContext>
-      <AddChapterBtn onAdd={handleAdd} />
+      <AddChapterBtn onAdd={handleAdd} t={t} />
     </>
   );
 }
@@ -208,13 +209,14 @@ export default function EditableChapterSidebar({
   const isAdmin = (() => {
     try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").role === "admin"; } catch { return false; }
   })();
+  const { t } = useLanguage();
 
   return (
     <aside className="chapter-sidebar">
-      <h2>Chapitres</h2>
+      <h2>{t("chapterSidebar.chapters")}</h2>
       <div className="chapter-list">
         <SemesterBlock
-          semester="s1" label="Semestre 1"
+          semester="s1" label={t("chapterSidebar.semester1")}
           chapters={groupedChapters.s1}
           selectedChapter={selectedChapter}
           onSelect={onSelectChapter}
@@ -223,9 +225,10 @@ export default function EditableChapterSidebar({
           rawSubject={rawSubject}
           onChanged={onChaptersChanged}
           marginTop={0}
+          t={t}
         />
         <SemesterBlock
-          semester="s2" label="Semestre 2"
+          semester="s2" label={t("chapterSidebar.semester2")}
           chapters={groupedChapters.s2}
           selectedChapter={selectedChapter}
           onSelect={onSelectChapter}
@@ -234,6 +237,7 @@ export default function EditableChapterSidebar({
           rawSubject={rawSubject}
           onChanged={onChaptersChanged}
           marginTop={groupedChapters.s1?.length > 0 ? "0.75rem" : 0}
+          t={t}
         />
       </div>
       {children}

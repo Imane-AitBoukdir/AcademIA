@@ -18,6 +18,7 @@ import {
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import {
     formatSubjectName,
     getDefaultSpecialty,
@@ -53,11 +54,11 @@ function getSubjectMeta(subject) {
   return { icon: BookOpen, color: accents[0], img: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=200&fit=crop" };
 }
 
-function getGreeting() {
+function getGreeting(t) {
   const hour = new Date().getHours();
-  if (hour < 12) return "Bonjour";
-  if (hour < 18) return "Bon après-midi";
-  return "Bonsoir";
+  if (hour < 12) return t("dash.morning");
+  if (hour < 18) return t("dash.afternoon");
+  return t("dash.evening");
 }
 
 function getUser() {
@@ -70,6 +71,7 @@ function getUser() {
 export default function DashboardPage() {
   const user = getUser();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const defaultSpecialty = getDefaultSpecialty(user);
 
@@ -112,7 +114,7 @@ export default function DashboardPage() {
             transition={{ delay: 0.08, duration: 0.3 }}
             whileHover={{ y: -3, transition: { duration: 0.15 } }}
           >
-            Prof IA
+            {t("sidebar.profAi")}
           </motion.button>
         </div>
 
@@ -125,9 +127,9 @@ export default function DashboardPage() {
         >
           <div className="dash-greeting-text">
             <h1 className="dash-greeting-title">
-              {getGreeting()}, <span className="dash-greeting-name">{user.prenom}</span>
+              {getGreeting(t)}, <span className="dash-greeting-name">{user.prenom}</span>
             </h1>
-            <p className="dash-greeting-sub">Prêt à continuer l'apprentissage ?</p>
+            <p className="dash-greeting-sub">{t("dash.continueStudying")}</p>
           </div>
         </motion.section>
 
@@ -136,7 +138,7 @@ export default function DashboardPage() {
           <section className="dash-section">
             <div className="dash-section-header">
               <RotateCcw size={18} className="dash-section-icon" />
-              <h2 className="dash-section-title">Reprendre ou j'ai laisse</h2>
+              <h2 className="dash-section-title">{t("dash.continueStudying")}</h2>
             </div>
             <div className="dash-resume-stack">
             {lastCourse ? (
@@ -150,7 +152,7 @@ export default function DashboardPage() {
                 <PlayCircle size={20} />
               </div>
               <div className="resume-card-body">
-                <p className="resume-card-label">Dernier cours consulte</p>
+                <p className="resume-card-label">{t("dash.lastCourse")}</p>
                 <h3 className="resume-card-title">{lastCourse.chapter}</h3>
                 <p className="resume-card-meta">{formatSubjectName(lastCourse.subject)}</p>
               </div>
@@ -163,16 +165,16 @@ export default function DashboardPage() {
                   })
                 }
               >
-                Reprendre <ArrowRight size={15} />
+                {t("dash.resume")} <ArrowRight size={15} />
               </button>
             </motion.div>
             ) : (
             <div className="dash-resume-card" style={{ opacity: 0.5 }}>
               <div className="resume-card-icon accent-lavender"><PlayCircle size={20} /></div>
               <div className="resume-card-body">
-                <p className="resume-card-label">Dernier cours consulte</p>
-                <h3 className="resume-card-title">Aucun cours encore</h3>
-                <p className="resume-card-meta">Commencez a explorer vos matieres !</p>
+                <p className="resume-card-label">{t("dash.courses")}</p>
+                <h3 className="resume-card-title">{t("dash.nothingYet")}</h3>
+                <p className="resume-card-meta"></p>
               </div>
             </div>
             )}
@@ -188,7 +190,7 @@ export default function DashboardPage() {
                 <PenTool size={20} />
               </div>
               <div className="resume-card-body">
-                <p className="resume-card-label">Dernier exercice</p>
+                <p className="resume-card-label">{t("dash.lastExercise")}</p>
                 <h3 className="resume-card-title">{lastExercise.chapter}</h3>
                 <p className="resume-card-meta">{formatSubjectName(lastExercise.subject)}</p>
               </div>
@@ -197,16 +199,16 @@ export default function DashboardPage() {
                     state: { subjectName: lastExercise.subject, specialty: lastExercise.specialty, chapter: lastExercise.chapter, semester: lastExercise.semester },
                   })
                 }>
-                Continuer <ArrowRight size={15} />
+                {t("dash.resume")} <ArrowRight size={15} />
               </button>
             </motion.div>
             ) : (
             <div className="dash-resume-card" style={{ opacity: 0.5 }}>
               <div className="resume-card-icon accent-peach"><PenTool size={20} /></div>
               <div className="resume-card-body">
-                <p className="resume-card-label">Dernier exercice</p>
-                <h3 className="resume-card-title">Aucun exercice encore</h3>
-                <p className="resume-card-meta">Allez faire des exercices !</p>
+                <p className="resume-card-label">{t("dash.exercises")}</p>
+                <h3 className="resume-card-title">{t("dash.nothingYet")}</h3>
+                <p className="resume-card-meta"></p>
               </div>
             </div>
             )}
@@ -217,8 +219,8 @@ export default function DashboardPage() {
         {/* ── Subject grid ── */}
         <section className="dash-section">
           <div className="content-title-row">
-            <p className="content-title">Vos Matières</p>
-            <span className="content-title-count">{subjects.length} matières</span>
+            <p className="content-title">{t("dash.yourSubjects")}</p>
+            <span className="content-title-count">{subjects.length} {t("dash.subjectsCount")}</span>
           </div>
           <div className="subject-grid">
             {subjects.map((subjectObj, index) => {
@@ -234,13 +236,13 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 + index * 0.05, duration: 0.35 }}
                 >
-                  {isDisabled && <span className="coming-soon-badge-card">Bientôt disponible</span>}
+                  {isDisabled && <span className="coming-soon-badge-card">{t("dash.comingSoon")}</span>}
                   <div className="subject-card-img">
                     <img src={meta.img} alt={formatSubjectName(subjectName)} loading="lazy" />
                   </div>
                   <div className="subject-card-body">
                     <h3 className="subject-card-title">{formatSubjectName(subjectName)}</h3>
-                    <p className="subject-card-desc">Explorez les chapitres, cours et exercices</p>
+                    <p className="subject-card-desc">{t("dash.exploreChapters")}</p>
                     {!isDisabled && (
                       <button
                         className="card-action"
@@ -251,7 +253,7 @@ export default function DashboardPage() {
                           })
                         }
                       >
-                        Ouvrir <ArrowRight size={15} />
+                        {t("dash.resume")} <ArrowRight size={15} />
                       </button>
                     )}
                   </div>

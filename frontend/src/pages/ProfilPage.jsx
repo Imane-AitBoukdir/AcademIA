@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Mail, Menu, Phone, Save, User } from "lucide-react";
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import { getSpecialtiesForSchoolLevel, getSpecialtyById, lyceeSpecialties } from "../lib/curriculum";
 
 function getUser() {
@@ -11,16 +12,17 @@ function getUser() {
   };
 }
 
-const levelLabels = {
-  primaire: "Primaire",
-  college: "Collège",
-  lycee: "Lycée",
-};
-
 export default function ProfilPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(getUser);
   const [saved, setSaved] = useState(false);
+  const { t } = useLanguage();
+
+  const levelLabels = {
+    primaire: t("auth.primaire"),
+    college: t("auth.college"),
+    lycee: t("auth.lycee"),
+  };
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -57,7 +59,7 @@ export default function ProfilPage() {
           >
             <Menu size={18} />
           </button>
-          <h1 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>Mon Profil</h1>
+          <h1 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>{t("profile.title")}</h1>
         </header>
 
         <motion.div
@@ -81,48 +83,48 @@ export default function ProfilPage() {
           <form className="profil-form" onSubmit={onSave}>
             <div className="profil-field-row">
               <label className="profil-label">
-                <User size={15} /> Prénom
+                <User size={15} /> {t("profile.firstName")}
                 <input name="prenom" value={user.prenom} onChange={onChange} className="profil-input" />
               </label>
               <label className="profil-label">
-                <User size={15} /> Nom
+                <User size={15} /> {t("profile.lastName")}
                 <input name="nom" value={user.nom} onChange={onChange} className="profil-input" />
               </label>
             </div>
 
             <label className="profil-label">
-              <Mail size={15} /> E-mail
+              <Mail size={15} /> {t("profile.email")}
               <input name="email" type="email" value={user.email} onChange={onChange} className="profil-input" />
             </label>
 
             <div className="profil-field-row">
               <label className="profil-label">
-                <Phone size={15} /> Téléphone
+                <Phone size={15} /> {t("profile.phone")}
                 <input name="tel" value={user.tel} onChange={onChange} className="profil-input" />
               </label>
               <label className="profil-label">
-                Âge
+                {t("profile.age")}
                 <input name="age" type="number" value={user.age} onChange={onChange} className="profil-input" min="5" max="99" />
               </label>
             </div>
 
             <label className="profil-label">
-              Niveau scolaire
+              {t("profile.schoolLevel")}
               <select name="niveauScolaire" value={user.niveauScolaire} onChange={onChange} className="profil-input">
-                <option value="primaire">Primaire</option>
-                <option value="college">Collège</option>
-                <option value="lycee">Lycée</option>
+                <option value="primaire">{t("auth.primaire")}</option>
+                <option value="college">{t("auth.college")}</option>
+                <option value="lycee">{t("auth.lycee")}</option>
               </select>
             </label>
 
             {user.niveauScolaire === "primaire" && (
               <label className="profil-label">
-                Année
+                {t("profile.year")}
                 <select name="specialty" value={user.specialty} onChange={onChange} className="profil-input">
-                  <option value="">— Sélectionnez votre année —</option>
+                  <option value="">{t("profile.selectYear")}</option>
                   {getSpecialtiesForSchoolLevel("primaire").map((s) => (
                     <option key={s.id} value={s.id} disabled={s.enabled === false}>
-                      {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                      {s.label}{s.enabled === false ? ` (${t("profile.comingSoon")})` : ""}
                     </option>
                   ))}
                 </select>
@@ -131,12 +133,12 @@ export default function ProfilPage() {
 
             {user.niveauScolaire === "college" && (
               <label className="profil-label">
-                Année
+                {t("profile.year")}
                 <select name="specialty" value={user.specialty} onChange={onChange} className="profil-input">
-                  <option value="">— Sélectionnez votre année —</option>
+                  <option value="">{t("profile.selectYear")}</option>
                   {getSpecialtiesForSchoolLevel("college").map((s) => (
                     <option key={s.id} value={s.id} disabled={s.enabled === false}>
-                      {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                      {s.label}{s.enabled === false ? ` (${t("profile.comingSoon")})` : ""}
                     </option>
                   ))}
                 </select>
@@ -145,12 +147,12 @@ export default function ProfilPage() {
 
             {user.niveauScolaire === "lycee" && (
               <label className="profil-label">
-                Filière
+                {t("profile.specialty")}
                 <select name="specialty" value={user.specialty} onChange={onChange} className="profil-input">
-                  <option value="">— Sélectionnez votre filière —</option>
+                  <option value="">{t("profile.selectSpecialty")}</option>
                   {lyceeSpecialties.map((s) => (
                     <option key={s.id} value={s.id} disabled={s.enabled === false}>
-                      {s.label} — {s.labelAr}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                      {s.label} — {s.labelAr}{s.enabled === false ? ` (${t("profile.comingSoon")})` : ""}
                     </option>
                   ))}
                 </select>
@@ -159,7 +161,7 @@ export default function ProfilPage() {
 
             <button type="submit" className="profil-save-btn">
               <Save size={16} />
-              {saved ? "Enregistré !" : "Enregistrer"}
+              {saved ? t("profile.saved") : t("profile.save")}
             </button>
           </form>
         </motion.div>

@@ -1,10 +1,12 @@
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useLanguage } from "../i18n";
 
 export default function Navbar() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
 
   const scrollTo = (id) => {
     setOpen(false);
@@ -29,20 +31,20 @@ export default function Navbar() {
 
         <div className={`navbar-links${open ? " open" : ""}`}>
           <button className="navbar-link" type="button" onClick={() => scrollTo("features")}>
-            Fonctionnalités
+            {t("nav.features")}
           </button>
           <button className="navbar-link" type="button" onClick={() => scrollTo("how-it-works")}>
-            Comment ça marche
+            {t("nav.howItWorks")}
           </button>
           <button className="navbar-link" type="button" onClick={() => scrollTo("ai-tutor")}>
-            Tuteur IA
+            {t("nav.aiTutor")}
           </button>
           <div className="navbar-divider" />
           <Link to="/signin" className="navbar-link" onClick={() => setOpen(false)}>
-            Se Connecter
+            {t("nav.signIn")}
           </Link>
           <Link to="/signup" className="btn btn-primary btn-sm" onClick={() => setOpen(false)}>
-            S'Inscrire
+            {t("nav.signUp")}
           </Link>
         </div>
       </div>

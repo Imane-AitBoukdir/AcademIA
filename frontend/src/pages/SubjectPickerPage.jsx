@@ -15,6 +15,7 @@ import {
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import {
     formatSubjectName,
     getDefaultSpecialty,
@@ -54,9 +55,9 @@ function getSubjectMeta(subject) {
 }
 
 const modeConfig = {
-  courses: { title: "Cours", desc: "Consultez les leçons et chapitres", routePrefix: "/courses" },
-  exercises: { title: "Exercices", desc: "Entraînez-vous avec des exercices", routePrefix: "/exercises" },
-  "mock-exams": { title: "Examens Blancs", desc: "Préparez-vous avec des simulations d'examens", routePrefix: "/mock-exams" },
+  courses: { titleKey: "picker.courses", descKey: "picker.coursesDesc", routePrefix: "/courses" },
+  exercises: { titleKey: "picker.exercises", descKey: "picker.exercisesDesc", routePrefix: "/exercises" },
+  "mock-exams": { titleKey: "picker.mockExams", descKey: "picker.mockExamsDesc", routePrefix: "/mock-exams" },
 };
 
 function getUser() {
@@ -68,9 +69,10 @@ function getUser() {
 
 export default function SubjectPickerPage() {
   const { mode } = useParams();
-  const config = modeConfig[mode] || modeConfig.courses;
+  const rawConfig = modeConfig[mode] || modeConfig.courses;
   const user = getUser();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const defaultSpecialty = getDefaultSpecialty(user);
 
@@ -104,15 +106,15 @@ export default function SubjectPickerPage() {
           transition={{ duration: 0.4 }}
         >
           <div className="dash-greeting-text">
-            <h1 className="dash-greeting-title">{config.title}</h1>
-            <p className="dash-greeting-sub">Choisissez une matière pour commencer</p>
+            <h1 className="dash-greeting-title">{t(rawConfig.titleKey)}</h1>
+            <p className="dash-greeting-sub">{t("picker.chooseSubject")}</p>
           </div>
         </motion.section>
 
         <section className="dash-section">
           <div className="content-title-row">
-            <p className="content-title">Vos Matières</p>
-            <span className="content-title-count">{subjects.length} matières</span>
+            <p className="content-title">{t("picker.yourSubjects")}</p>
+            <span className="content-title-count">{subjects.length} {t("picker.subjectsCount")}</span>
           </div>
           <div className="subject-grid">
             {subjects.map((subjectObj, index) => {
@@ -128,7 +130,7 @@ export default function SubjectPickerPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + index * 0.05, duration: 0.35 }}
                 >
-                  {isDisabled && <span className="coming-soon-badge-card">Bientôt disponible</span>}
+                  {isDisabled && <span className="coming-soon-badge-card">{t("picker.comingSoon")}</span>}
                   <div className="subject-card-img">
                     <img
                       src={meta.img}
@@ -140,19 +142,19 @@ export default function SubjectPickerPage() {
                     <h3 className="subject-card-title">
                       {formatSubjectName(subjectName)}
                     </h3>
-                    <p className="subject-card-desc">{config.desc}</p>
+                    <p className="subject-card-desc">{t(rawConfig.descKey)}</p>
                     {!isDisabled && (
                       <button
                         className="card-action"
                         type="button"
                         onClick={() =>
                           navigate(
-                            `${config.routePrefix}/${selectedSpecialty}/${subjectName}`,
+                            `${rawConfig.routePrefix}/${selectedSpecialty}/${subjectName}`,
                             { state: { subjectName, specialty: selectedSpecialty } },
                           )
                         }
                       >
-                        Ouvrir <ArrowRight size={15} />
+                        {t("picker.open")} <ArrowRight size={15} />
                       </button>
                     )}
                   </div>

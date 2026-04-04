@@ -82,6 +82,7 @@ async def generate_exam(
     exam_pdf_id: Optional[str] = Form(None),
     course_uri: Optional[str] = Form(None),
     exam_uri: Optional[str] = Form(None),
+    uploaded_by: Optional[str] = Form(""),
 ):
     # ── 1. Prepare Gemini prompt parts ────────────────────────────────────────
     prompt_parts = []
@@ -220,6 +221,7 @@ async def generate_exam(
         subject=subject,
         semester="s1",
         chapter="generated",
+        uploaded_by=uploaded_by or "",
     )
 
     return {"id": file_id, "filename": filename}

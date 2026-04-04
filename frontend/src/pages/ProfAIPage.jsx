@@ -3,10 +3,12 @@ import { GraduationCap, Menu } from "lucide-react";
 import { useState } from "react";
 import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import { getDefaultSpecialty } from "../lib/curriculum";
 
 export default function ProfAIPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t } = useLanguage();
 
   /* Read specialty from stored user profile */
   let specialty = "";
@@ -36,7 +38,7 @@ export default function ProfAIPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <GraduationCap size={20} style={{ color: "var(--primary)" }} />
             <h1 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>
-              Prof IA
+              {t("profai.title")}
             </h1>
           </div>
           {specialty && (

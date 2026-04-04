@@ -4,16 +4,16 @@
  */
 
 export {
-    ALL_SPECIALTIES,
-    getChaptersForSubject,
-    getDefaultSpecialty,
-    getSchoolLevels,
-    getSchoolLevelsWithLabels,
-    getSpecialtiesForSchoolLevel,
-    getSpecialtyById,
-    getSubjectLanguage,
-    getSubjectsBySpecialty,
-    lyceeSpecialties
+  ALL_SPECIALTIES,
+  getChaptersForSubject,
+  getDefaultSpecialty,
+  getSchoolLevels,
+  getSchoolLevelsWithLabels,
+  getSpecialtiesForSchoolLevel,
+  getSpecialtyById,
+  getSubjectLanguage,
+  getSubjectsBySpecialty,
+  lyceeSpecialties
 } from "../data/curriculum_data";
 
 // ── Kept for backward compat in DashboardPage / SubjectPickerPage ───────────
@@ -148,6 +148,10 @@ export async function generateExam(specialty, subject, chapters, language, cours
   if (examPdfId) fd.append("exam_pdf_id", examPdfId);
   if (courseUri) fd.append("course_uri", courseUri);
   if (examUri) fd.append("exam_uri", examUri);
+  try {
+    const user = JSON.parse(localStorage.getItem("academiaUser") || "{}");
+    if (user.email) fd.append("uploaded_by", user.email);
+  } catch {}
   const res = await fetch(`${API_URL}/api/generate-exam`, { method: "POST", body: fd });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

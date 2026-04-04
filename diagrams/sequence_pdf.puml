@@ -1,0 +1,40 @@
+@startuml Sequence_PDF_Upload
+' ──────────────────────────────────────────
+'  Compile: https://www.plantuml.com/plantuml/uml
+'  Paste this code → click Submit → download PNG
+' ──────────────────────────────────────────
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #6C47B8
+skinparam sequenceParticipantBackgroundColor #EDE7F6
+skinparam sequenceLifeLineBorderColor #6C47B8
+skinparam noteBorderColor #E8722A
+skinparam noteBackgroundColor #FFF3E0
+
+actor "Utilisateur" as User
+participant "React\nCoursePage" as UI
+participant "FastAPI\nPOST /api/pdfs/upload" as API
+participant "pdfs/service" as SVC
+database "MongoDB\nGridFS" as GFS
+
+User -> UI : Glisse un fichier PDF\nsur la zone de visualisation
+UI -> UI : Validation MIME type\n(application/pdf)
+UI -> API : POST /api/pdfs/upload\n(file, pdf_type, specialty,\nsubject, semester, chapter)
+
+API -> SVC : sanitize_filename(name)
+note right : Suppression des caractères\ndangereux (path traversal)\nConservation de [a-zA-Z0-9_-. ]
+
+API -> SVC : store_pdf(bytes, metadata)
+SVC -> GFS : upload_from_stream()\navec metadata enrichie
+GFS --> SVC : file_id (ObjectId)
+SVC --> API : {id, filename}
+
+API --> UI : 200 OK {id, filename}
+UI -> UI : refreshPdfs()
+UI -> API : GET /api/pdfs/{type}/{spec}/{subj}/{sem}/{ch}
+API -> GFS : find(query)
+GFS --> API : liste de fichiers
+API --> UI : [{id, filename, uploadDate}]
+UI --> User : PDF affiché dans l'iframe\n(onglet "Partie N")
+
+@enduml

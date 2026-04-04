@@ -1128,7 +1128,7 @@ select.form-input { cursor: pointer; }
 
 .pdf-viewer-area { position: relative; }
 .pdf-viewer-dragging::after {
-  content: "Déposez le PDF ici";
+  content: var(--drop-pdf-text, "Déposez le PDF ici");
   position: absolute; inset: 0; z-index: 20;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.1rem; font-weight: 600; color: var(--primary);
@@ -1747,3 +1747,78 @@ select.form-input { cursor: pointer; }
 }
 .ecs-toggle-btn:hover { color: var(--primary); }
 .ecs-toggle-btn.muted { opacity: 0.45; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RTL overrides (Arabic)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Sidebar ── */
+[dir="rtl"] .sidebar {
+  left: auto; right: 0;
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+[dir="rtl"] .sidebar-item {
+  text-align: right;
+}
+[dir="rtl"] .sidebar-active-dot {
+  margin-left: 0; margin-right: auto;
+}
+
+/* ── Main content area ── */
+[dir="rtl"] .dashboard-main {
+  margin-left: 0; margin-right: var(--sidebar-w);
+}
+[dir="rtl"] .course-main-area {
+  margin-left: 0; margin-right: var(--sidebar-w);
+}
+
+/* ── Sidebar collapse ── */
+[dir="rtl"] .nav-collapsed .sidebar {
+  transform: translateX(100%);
+}
+[dir="rtl"] .nav-collapsed .dashboard-main {
+  margin-right: 0;
+}
+
+/* ── Exam start bar ── */
+[dir="rtl"] .exam-start-bar {
+  left: 0; right: var(--sidebar-w);
+}
+
+/* ── Delete badge on PDF tabs ── */
+[dir="rtl"] .pdf-tab.deletable { padding-right: 0.5rem; padding-left: 1.4rem; }
+[dir="rtl"] .pdf-tab-x { right: auto; left: -4px; }
+
+/* ── Chapter sidebar editable ── */
+[dir="rtl"] .chapter-item.ecs-editable { padding-right: 0.5rem; padding-left: 3rem; }
+[dir="rtl"] .ecs-actions { right: auto; left: 0.35rem; }
+
+/* ── Coming-soon badge ── */
+[dir="rtl"] .coming-soon-badge { margin-left: 0; margin-right: auto; }
+
+/* ── Content title count ── */
+[dir="rtl"] .content-title-count { margin-left: 0; margin-right: auto; }
+
+/* ── Profile label icon ── */
+[dir="rtl"] .profil-label svg { margin-right: 0; margin-left: 4px; }
+
+/* ── Admin select arrow ── */
+[dir="rtl"] .admin-select-arrow { right: auto; left: 0.6rem; }
+
+/* ── PDF delete btn (mobile) ── */
+[dir="rtl"] .pdf-delete-inline { margin-left: 0; margin-right: auto; }
+
+/* ── Mobile overrides ── */
+@media (max-width: 768px) {
+  [dir="rtl"] .sidebar {
+    transform: translateX(100%);
+  }
+  [dir="rtl"] .sidebar.open {
+    transform: translateX(0);
+  }
+  [dir="rtl"] .dashboard-main,
+  [dir="rtl"] .course-main-area {
+    margin-right: 0;
+  }
+}

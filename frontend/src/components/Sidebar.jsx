@@ -1,33 +1,35 @@
 import {
-    BookOpen,
-    Bot,
-    Dumbbell,
-    GraduationCap,
-    LayoutDashboard,
-    LogOut,
-    Settings,
-    Shield,
-    Sparkles,
-    UserCircle,
+  BookOpen,
+  Bot,
+  Dumbbell,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Shield,
+  Sparkles,
+  UserCircle,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useLanguage } from "../i18n";
 
-const baseItems = [
-  { icon: LayoutDashboard, label: "Tableau de Bord", path: "/dashboard", match: "exact" },
-  { icon: BookOpen, label: "Matières", path: "/pick/courses", match: "/courses" },
-  { icon: Dumbbell, label: "Exercices", path: "/pick/exercises", match: "/exercises" },
-  { icon: GraduationCap, label: "Examens Blancs", path: "/pick/mock-exams", match: "/mock-exams" },
-  { icon: Bot, label: "Prof IA", path: "/prof-ai", match: "/prof-ai" },
-  { icon: UserCircle, label: "Profil", path: "/profil", match: "/profil" },
-  { icon: Settings, label: "Paramètres", path: "/settings", match: "/settings" },
+const baseKeys = [
+  { icon: LayoutDashboard, key: "sidebar.dashboard", path: "/dashboard", match: "exact" },
+  { icon: BookOpen, key: "sidebar.subjects", path: "/pick/courses", match: "/courses" },
+  { icon: Dumbbell, key: "sidebar.exercises", path: "/pick/exercises", match: "/exercises" },
+  { icon: GraduationCap, key: "sidebar.mockExams", path: "/pick/mock-exams", match: "/mock-exams" },
+  { icon: Bot, key: "sidebar.profAi", path: "/prof-ai", match: "/prof-ai" },
+  { icon: UserCircle, key: "sidebar.profile", path: "/profil", match: "/profil" },
+  { icon: Settings, key: "sidebar.settings", path: "/settings", match: "/settings" },
 ];
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
+  const { t } = useLanguage();
   const user = JSON.parse(localStorage.getItem("academiaUser") || "{}");
   const items = user.role === "admin"
-    ? [...baseItems, { icon: Shield, label: "Administration", path: "/admin", match: "/admin" }]
-    : baseItems;
+    ? [...baseKeys, { icon: Shield, key: "sidebar.admin", path: "/admin", match: "/admin" }]
+    : baseKeys;
 
   return (
     <>
@@ -50,7 +52,7 @@ export default function Sidebar({ open, onClose }) {
               : location.pathname.startsWith(item.match) || location.pathname === item.path;
             return (
               <Link
-                key={item.label}
+                key={item.key}
                 to={item.path}
                 className={`sidebar-item${active ? " active" : ""}`}
                 onClick={onClose}
@@ -58,7 +60,7 @@ export default function Sidebar({ open, onClose }) {
                 <span className="sidebar-item-icon">
                   <Icon size={18} />
                 </span>
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
                 {active && <span className="sidebar-active-dot" />}
               </Link>
             );
@@ -69,7 +71,7 @@ export default function Sidebar({ open, onClose }) {
             <span className="sidebar-item-icon">
               <LogOut size={18} />
             </span>
-            <span>Déconnexion</span>
+            <span>{t("sidebar.logout")}</span>
           </Link>
         </div>
       </aside>

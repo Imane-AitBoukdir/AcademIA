@@ -1,0 +1,53 @@
+@startuml Sequence_Exam_Generation
+' ──────────────────────────────────────────
+'  Compile: https://www.plantuml.com/plantuml/uml
+'  Paste this code → click Submit → download PNG
+' ──────────────────────────────────────────
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #6C47B8
+skinparam sequenceParticipantBackgroundColor #EDE7F6
+skinparam sequenceLifeLineBorderColor #6C47B8
+skinparam sequenceDividerBackgroundColor #F5F2F7
+skinparam noteBorderColor #E8722A
+skinparam noteBackgroundColor #FFF3E0
+
+actor "Élève" as Eleve
+participant "React\nMockExamsPage" as UI
+participant "FastAPI\nPOST /api/generate-exam" as API
+participant "FileCache" as FC
+participant "GeminiService" as GS
+participant "pdflatex" as TEX
+database "GridFS" as GFS
+
+Eleve -> UI : Sélectionne chapitres\n+ clique "Générer"
+UI -> API : POST /api/generate-exam\n(subject, level, specialty,\nchapters, language,\ncourse_pdf_id, exam_pdf_id)
+
+== 1. Chargement des PDF de référence ==
+API -> FC : get_or_upload(course_pdf_id)
+FC --> API : course_uri
+API -> FC : get_or_upload(exam_pdf_id)
+FC --> API : exam_uri
+
+== 2. Génération LaTeX ==
+API -> GS : generate_raw(exam_prompt,\n[course_pdf, exam_pdf, instructions])
+note right : Prompt spécialisé :\nformat examen marocain,\nbarème, types de questions
+GS --> API : code LaTeX complet\n(\\documentclass ... \\end{document})
+
+== 3. Nettoyage du code ==
+API -> API : Suppression code fences\nExtraction depuis \\documentclass
+
+== 4. Compilation LaTeX ==
+API -> TEX : pdflatex -interaction=nonstopmode\n(passe 1/2)
+TEX --> API : exam.pdf
+API -> TEX : pdflatex (passe 2/2)
+TEX --> API : exam.pdf (final)
+
+== 5. Stockage ==
+API -> GFS : store_pdf(exam_bytes,\nmetadata={type: "exams", ...})
+GFS --> API : file_id
+
+API --> UI : {file_id, latex_code}
+UI --> Eleve : PDF affiché dans le visualiseur
+
+@enduml

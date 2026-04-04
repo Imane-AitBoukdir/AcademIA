@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import { useLanguage } from "./i18n";
 import { loadCurriculum } from "./lib/curriculum";
 import AdminPage from "./pages/AdminPage";
 import CoursePage from "./pages/CoursePage";
@@ -27,6 +28,7 @@ function PublicLayout({ children }) {
 export default function App() {
 	const [ready, setReady] = useState(false);
 	const [loadError, setLoadError] = useState(false);
+	const { t } = useLanguage();
 
 	const tryLoad = () => {
 		setLoadError(false);
@@ -42,10 +44,10 @@ export default function App() {
 			<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg-primary, #f9fafb)" }}>
 				<div style={{ textAlign: "center", maxWidth: 360 }}>
 					<p style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 8, color: "var(--text-primary, #1a1a2e)" }}>
-						Impossible de charger les données
+						{t("common.loadError")}
 					</p>
 					<p style={{ fontSize: "0.9rem", color: "var(--text-secondary, #666)", marginBottom: 16 }}>
-						Le serveur est peut-être en cours de démarrage. Veuillez réessayer.
+						{t("common.loadErrorDesc")}
 					</p>
 					<button
 						type="button"
@@ -56,7 +58,7 @@ export default function App() {
 							fontWeight: 600, cursor: "pointer", fontSize: "0.9rem",
 						}}
 					>
-						Réessayer
+						{t("common.retry")}
 					</button>
 				</div>
 			</div>
@@ -68,7 +70,7 @@ export default function App() {
 			<div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
 				<div className="text-center">
 					<div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-					<p className="text-gray-600 dark:text-gray-300">Chargement…</p>
+					<p className="text-gray-600 dark:text-gray-300">{t("common.loading")}</p>
 				</div>
 			</div>
 		);

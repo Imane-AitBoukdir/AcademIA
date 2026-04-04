@@ -1,0 +1,125 @@
+@startuml AcademIA_Classes
+' ──────────────────────────────────────────
+'  Compile: https://www.plantuml.com/plantuml/uml
+'  Paste this code → click Submit → download PNG
+' ──────────────────────────────────────────
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam classHeaderBackgroundColor #EDE7F6
+skinparam classBorderColor #6C47B8
+skinparam arrowColor #6C47B8
+skinparam packageBorderColor #6C47B8
+skinparam packageBackgroundColor #FAFAFE
+
+package "Utilisateurs" {
+  class User {
+    +id: ObjectId
+    +prenom: String
+    +nom: String
+    +email: EmailStr
+    +password_hash: String
+    +tel: String
+    +age: Integer [0..120]
+    +niveauScolaire: Enum {primaire, college, lycee}
+    +specialty: String
+    +role: Enum {student, admin}
+    +created_at: DateTime
+  }
+}
+
+package "Conversations IA" {
+  class Session {
+    +session_id: UUID
+    +student_id: String
+    +language: String
+    +chapter: String
+    +mode: Enum {course, exercise, mock_exam, general}
+    +level: String
+    +subject: String
+    +reference_pdfs: List<String>
+    +current_turn: Integer
+    +created_at: DateTime
+    +last_active: DateTime
+    --
+    +add_file(file_uri, name, mime_type)
+    +add_turn(role, text)
+    +get_file_uris(): List<String>
+  }
+
+  class HistoryTurn {
+    +role: Enum {user, model}
+    +text: String
+  }
+
+  class UploadedFile {
+    +file_uri: String
+    +original_name: String
+    +mime_type: String
+    +description: String
+    +turn_uploaded: Integer
+    +uploaded_at: DateTime
+  }
+
+  class ChatResponse {
+    +text: String
+    +audio: String [optional, base64]
+    +session_id: String
+    +files_in_session: List<String>
+  }
+}
+
+package "Curriculum" {
+  class SchoolLevel {
+    +_id: String
+    +label: String
+    +order: Integer
+  }
+
+  class Specialty {
+    +_id: String
+    +school_level: String
+    +label: String
+    +label_ar: String
+    +order: Integer
+    +enabled: Boolean
+  }
+
+  class Subject {
+    +_id: ObjectId
+    +specialty_id: String
+    +name: String
+    +order: Integer
+    +enabled: Boolean
+  }
+
+  class Chapter {
+    +_id: ObjectId
+    +specialty_id: String
+    +subject_name: String
+    +semester: Enum {s1, s2}
+    +name: String
+    +order: Integer
+    +enabled: Boolean
+  }
+}
+
+package "Cache IA" {
+  class GeminiFileCache {
+    +gridfs_file_id: String
+    +gemini_uri: String
+    +mime_type: String
+    +uploaded_at: DateTime
+    +expires_at: DateTime (TTL 47h)
+  }
+}
+
+' ── Relations ──
+SchoolLevel "1" -- "*" Specialty : contient
+Specialty "1" -- "*" Subject : contient
+Specialty "1" -- "*" Chapter : contient
+User "1" -- "*" Session : possede
+Session "1" -- "*" HistoryTurn : history
+Session "1" -- "*" UploadedFile : uploaded_files
+
+@enduml

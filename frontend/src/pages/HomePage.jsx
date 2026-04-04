@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { BookOpen, ChevronRight, Home, PenTool } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../i18n";
 
 const fadeUp = {
   initial: { opacity: 0, y: 18 },
@@ -8,61 +9,22 @@ const fadeUp = {
   transition: { duration: 0.5 },
 };
 
-const features = [
-  {
-    title: "Programme Marocain",
-    desc: "Des cours complets alignés avec le programme officiel de l'éducation marocaine, du primaire au collège.",
-    accent: "mint",
-    icon: <BookOpen size={20} />,
-  },
-  {
-    title: "Exercices Interactifs",
-    desc: "Entraînez-vous avec des exercices conçus pour chaque chapitre, avec un retour instantané.",
-    accent: "peach",
-    icon: <PenTool size={20} />,
-  },
-  {
-    title: "Tuteur IA",
-    desc: "Un tuteur personnel qui explique les cours, répond aux questions et aide aux devoirs en arabe ou en français.",
-    accent: "lavender",
-    icon: <ChevronRight size={20} />,
-  },
-  {
-    title: "Apprenez Partout",
-    desc: "Accédez à votre classe depuis n'importe quel appareil, que ce soit à la maison ou en déplacement.",
-    accent: "primary",
-    icon: <Home size={20} />,
-  },
-];
-
-const steps = [
-  { num: "01", title: "Créez votre compte", desc: "Inscription simple avec votre niveau scolaire et vos informations." },
-  { num: "02", title: "Choisissez votre matière", desc: "Parcourez votre programme et choisissez le chapitre souhaité." },
-  { num: "03", title: "Apprenez avec l'IA", desc: "Étudiez le cours, pratiquez les exercices et demandez l'aide du tuteur." },
-];
-
-const heroCards = [
-  {
-    title: "Cours bilingues",
-    desc: "Passez facilement entre l'arabe et le français.",
-    className: "hero-card hero-card-purple",
-    icon: <BookOpen size={18} />,
-  },
-  {
-    title: "Exercices interactifs",
-    desc: "Entraînez-vous chapitre par chapitre avec un retour instantané.",
-    className: "hero-card hero-card-gold",
-    icon: <PenTool size={18} />,
-  },
-  {
-    title: "Étudiez partout",
-    desc: "Continuez à apprendre à la maison, en déplacement, ou à distance.",
-    className: "hero-card hero-card-mint",
-    icon: <Home size={18} />,
-  },
-];
-
 export default function HomePage() {
+  const { t } = useLanguage();
+
+  const features = [
+    { title: t("home.feat1Title"), desc: t("home.feat1Desc"), accent: "mint", icon: <BookOpen size={20} /> },
+    { title: t("home.feat2Title"), desc: t("home.feat2Desc"), accent: "peach", icon: <PenTool size={20} /> },
+    { title: t("home.feat3Title"), desc: t("home.feat3Desc"), accent: "lavender", icon: <ChevronRight size={20} /> },
+    { title: t("home.feat4Title"), desc: t("home.feat4Desc"), accent: "primary", icon: <Home size={20} /> },
+  ];
+
+  const steps = [
+    { num: "01", title: t("home.step1Title"), desc: t("home.step1Desc") },
+    { num: "02", title: t("home.step2Title"), desc: t("home.step2Desc") },
+    { num: "03", title: t("home.step3Title"), desc: t("home.step3Desc") },
+  ];
+
   return (
     <div className="home-page">
       <section className="hero">
@@ -71,18 +33,15 @@ export default function HomePage() {
             <motion.div className="hero-copy" {...fadeUp}>
               <p className="hero-kicker">Maroc • Élèves • Apprendre avec plaisir</p>
               <h1>
-                Une meilleure façon d'<span className="hero-accent hero-accent-pink">étudier,</span>{" "}
-                <span className="hero-accent hero-accent-purple">grandir,</span>
-                <br />
-                et <span className="hero-accent hero-accent-orange">rester motivé à l'école.</span>
+                {t("home.heroTitle1")}{" "}
+                <span className="hero-accent hero-accent-purple">{t("home.heroTitle2")}</span>
               </h1>
               <p className="hero-sub">
-                AcademIA offre aux élèves marocains un espace d'apprentissage chaleureux et inspirant
-                avec des cours, exercices et un tuteur IA conçu pour la vie scolaire réelle.
+                {t("home.heroSubtitle")}
               </p>
               <div className="hero-actions">
-                <Link to="/signup" className="btn btn-primary">Commencer</Link>
-                <a href="#features" className="btn btn-outline">Explorer les matières</a>
+                <Link to="/signup" className="btn btn-primary">{t("home.cta")}</Link>
+                <a href="#features" className="btn btn-outline">{t("home.ctaSecondary")}</a>
               </div>
               <div className="hero-chips">
                 <span className="hero-chip">Du primaire au Lycée</span>
@@ -120,8 +79,8 @@ export default function HomePage() {
       <section id="features" className="section section-alt">
         <div className="container">
           <div className="section-header">
-            <p className="section-label">Fonctionnalités</p>
-            <h2>Tout ce dont un élève a besoin pour réussir</h2>
+            <p className="section-label">{t("nav.features")}</p>
+            <h2>{t("home.featuresTitle")} {t("home.featuresSubtitle")}</h2>
           </div>
           <div className="features-grid">
             {features.map((f, i) => (
@@ -145,8 +104,8 @@ export default function HomePage() {
       <section id="how-it-works" className="section">
         <div className="container">
           <div className="section-header">
-            <p className="section-label">Comment ça marche</p>
-            <h2>Commencez à apprendre en trois étapes simples</h2>
+            <p className="section-label">{t("nav.howItWorks")}</p>
+            <h2>{t("home.howTitle")} <span className="accent">{t("home.howTitleAccent")}</span></h2>
           </div>
           <div className="steps-grid">
             {steps.map((s, i) => (
@@ -171,19 +130,16 @@ export default function HomePage() {
         <div className="container">
           <div className="ai-tutor-block">
             <div className="ai-tutor-text">
-              <p className="section-label">Tuteur IA</p>
-              <h2>Votre assistant d'apprentissage personnel</h2>
-              <p>
-                Le tuteur IA comprend votre programme et parle votre
-                langue. Il peut :
-              </p>
+              <p className="section-label">{t("nav.aiTutor")}</p>
+              <h2>{t("home.aiTitle")} {t("home.aiTitleAccent")}</h2>
+              <p>{t("home.aiDesc")}</p>
               <ul className="ai-tutor-list">
-                <li>Expliquer n'importe quel cours étape par étape</li>
-                <li>Répondre aux questions en arabe ou en français</li>
-                <li>Aider avec les devoirs à partir de photos ou documents</li>
-                <li>Vous interroger pour préparer les examens</li>
+                <li>{t("home.aiPoint1")}</li>
+                <li>{t("home.aiPoint2")}</li>
+                <li>{t("home.aiPoint3")}</li>
+                <li>{t("home.aiPoint4")}</li>
               </ul>
-              <Link to="/signup" className="btn btn-primary">Essayer maintenant</Link>
+              <Link to="/signup" className="btn btn-primary">{t("home.aiTry")}</Link>
             </div>
             <div className="ai-tutor-preview">
               <div className="chat-preview">
@@ -211,7 +167,7 @@ export default function HomePage() {
         <div className="container footer-inner">
           <p className="footer-logo">AcademIA</p>
           <p className="footer-copy">
-            Une éducation accessible pour chaque élève marocain.
+            © {new Date().getFullYear()} AcademIA. {t("home.footerRights")}
           </p>
         </div>
       </footer>

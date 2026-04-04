@@ -2,12 +2,14 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
+import { useLanguage } from "../i18n";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,14 +22,14 @@ export default function SignInPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.detail || "La connexion a échoué.");
+        setError(data.detail || t("auth.signInFailed"));
         return;
       }
       const user = await res.json();
       localStorage.setItem("academiaUser", JSON.stringify(user));
       navigate("/dashboard");
     } catch {
-      setError("Impossible de joindre le serveur. Veuillez réessayer.");
+      setError(t("auth.serverError"));
     }
   };
 
@@ -41,14 +43,14 @@ export default function SignInPage() {
         transition={{ duration: 0.4 }}
       >
         <div className="auth-header">
-          <h1>Bon retour</h1>
-          <p>Connectez-vous pour continuer.</p>
+          <h1>{t("auth.welcomeBack")}</h1>
+          <p>{t("auth.signInSubtitle")}</p>
           {error && <p style={{ color: "#e53e3e", marginTop: 8 }}>{error}</p>}
         </div>
 
         <div className="form-grid">
           <div className="form-group">
-            <label className="form-label" htmlFor="email">E-mail</label>
+            <label className="form-label" htmlFor="email">{t("profile.email")}</label>
             <input
               id="email"
               className="form-input"
@@ -61,7 +63,7 @@ export default function SignInPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Mot de passe</label>
+            <label className="form-label" htmlFor="password">{t("auth.password")}</label>
             <input
               id="password"
               className="form-input"
@@ -69,17 +71,17 @@ export default function SignInPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Votre mot de passe"
+              placeholder={t("auth.passwordPlaceholder")}
             />
           </div>
         </div>
 
         <button className="btn btn-primary auth-submit" style={{ width: "100%" }} type="submit">
-          Se Connecter
+          {t("auth.signInBtn")}
         </button>
 
         <p className="auth-footer">
-          Pas encore de compte ? <Link to="/signup">S'inscrire</Link>
+          {t("auth.noAccount")} <Link to="/signup">{t("auth.signUpLink")}</Link>
         </p>
       </motion.form>
     </div>

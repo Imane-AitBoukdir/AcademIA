@@ -83,6 +83,12 @@ async def create_subject(body: SubjectIn, _=Depends(admin_required)):
     return {"id": str(doc["_id"]), "name": doc["name"], "order": doc["order"]}
 
 
+@router.put("/subjects/reorder")
+async def reorder_subjects(body: ReorderRequest, _=Depends(admin_required)):
+    await service.reorder_subjects([it.model_dump() for it in body.items])
+    return {"ok": True}
+
+
 @router.put("/subjects/{subject_id}")
 async def update_subject(subject_id: str, body: SubjectUpdate, _=Depends(admin_required)):
     await service.update_subject(subject_id, body.model_dump(exclude_none=True))
@@ -94,18 +100,18 @@ async def delete_subject(subject_id: str, _=Depends(admin_required)):
     await service.delete_subject(subject_id)
 
 
-@router.put("/subjects/reorder")
-async def reorder_subjects(body: ReorderRequest, _=Depends(admin_required)):
-    await service.reorder_subjects([it.model_dump() for it in body.items])
-    return {"ok": True}
-
-
 # ── Chapters ─────────────────────────────────────────────────────────────────
 
 @router.post("/chapters", status_code=201)
 async def create_chapter(body: ChapterIn, _=Depends(admin_required)):
     doc = await service.create_chapter(body.model_dump())
     return {"id": str(doc["_id"]), "name": doc["name"], "semester": doc["semester"], "order": doc["order"]}
+
+
+@router.put("/chapters/reorder")
+async def reorder_chapters(body: ReorderRequest, _=Depends(admin_required)):
+    await service.reorder_chapters([it.model_dump() for it in body.items])
+    return {"ok": True}
 
 
 @router.put("/chapters/{chapter_id}")
@@ -117,9 +123,3 @@ async def update_chapter(chapter_id: str, body: ChapterUpdate, _=Depends(admin_r
 @router.delete("/chapters/{chapter_id}", status_code=204)
 async def delete_chapter(chapter_id: str, _=Depends(admin_required)):
     await service.delete_chapter(chapter_id)
-
-
-@router.put("/chapters/reorder")
-async def reorder_chapters(body: ReorderRequest, _=Depends(admin_required)):
-    await service.reorder_chapters([it.model_dump() for it in body.items])
-    return {"ok": True}

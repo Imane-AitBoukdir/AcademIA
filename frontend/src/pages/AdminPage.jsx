@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import * as api from "../lib/admin_api";
 import { reloadCurriculum } from "../lib/curriculum";
 
@@ -36,11 +37,12 @@ function SortableRow({ id, children }) {
 function InlineEdit({ value, onSave, placeholder }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
+  const { t } = useLanguage();
   useEffect(() => setText(value), [value]);
 
   if (!editing) {
     return (
-      <span className="admin-inline-text" onClick={() => setEditing(true)} title="Cliquer pour modifier">
+      <span className="admin-inline-text" onClick={() => setEditing(true)} title={t("admin.clickToEdit")}>
         {value || <em style={{ opacity: 0.5 }}>{placeholder}</em>}
         <Pencil size={12} className="admin-inline-pencil" />
       </span>
@@ -67,17 +69,18 @@ function InlineEdit({ value, onSave, placeholder }) {
 
 function DeleteBtn({ onConfirm, label }) {
   const [confirming, setConfirming] = useState(false);
+  const { t } = useLanguage();
   if (confirming) {
     return (
       <span className="admin-delete-confirm">
-        <span>Supprimer ?</span>
-        <button type="button" onClick={() => { onConfirm(); setConfirming(false); }} className="admin-btn-danger-sm">Oui</button>
-        <button type="button" onClick={() => setConfirming(false)} className="admin-btn-ghost-sm">Non</button>
+        <span>{t("admin.deleteConfirm")}</span>
+        <button type="button" onClick={() => { onConfirm(); setConfirming(false); }} className="admin-btn-danger-sm">{t("admin.yes")}</button>
+        <button type="button" onClick={() => setConfirming(false)} className="admin-btn-ghost-sm">{t("admin.no")}</button>
       </span>
     );
   }
   return (
-    <button type="button" className="admin-btn-icon danger" onClick={() => setConfirming(true)} title={`Supprimer ${label || ""}`}>
+    <button type="button" className="admin-btn-icon danger" onClick={() => setConfirming(true)} title={`${t("admin.deleteLabel")} ${label || ""}`}>
       <Trash2 size={14} />
     </button>
   );
@@ -87,13 +90,14 @@ function DeleteBtn({ onConfirm, label }) {
 
 function AddForm({ placeholder, onAdd, fields }) {
   const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
   const empty = fields ? Object.fromEntries(fields.map((f) => [f.key, ""])) : {};
   const [values, setValues] = useState(empty);
 
   if (!open) {
     return (
       <button type="button" className="admin-add-btn" onClick={() => setOpen(true)}>
-        <Plus size={14} /> Ajouter
+        <Plus size={14} /> {t("admin.add")}
       </button>
     );
   }
@@ -143,6 +147,7 @@ function AddForm({ placeholder, onAdd, fields }) {
 function ChapterList({ chapters, semester, specId, subjectNorm, onRefresh }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [items, setItems] = useState(chapters);
+  const { t } = useLanguage();
   useEffect(() => setItems(chapters), [chapters]);
 
   const handleDragEnd = async (event) => {
@@ -185,7 +190,7 @@ function ChapterList({ chapters, semester, specId, subjectNorm, onRefresh }) {
           ))}
         </SortableContext>
       </DndContext>
-      <AddForm placeholder="Nom du chapitre" onAdd={handleAdd} />
+      <AddForm placeholder={t("admin.chapterName")} onAdd={handleAdd} />
     </div>
   );
 }
@@ -193,6 +198,7 @@ function ChapterList({ chapters, semester, specId, subjectNorm, onRefresh }) {
 // ── Subject row (inline edit + delete) ──────────────────────────────────────
 
 function SubjectRow({ subject, specId, onRefresh, onSelect, isSelected }) {
+  const { t } = useLanguage();
   const handleRename = async (name) => {
     await api.updateSubject(subject.id, { name });
     onRefresh();
@@ -210,11 +216,11 @@ function SubjectRow({ subject, specId, onRefresh, onSelect, isSelected }) {
     >
       <BookOpen size={14} className="admin-node-icon" />
       <InlineEdit value={subject.name} onSave={handleRename} />
-      <span className="admin-node-badge">{count} ch.</span>
+      <span className="admin-node-badge">{count} {t("admin.chCount")}</span>
       <button
         type="button"
         className={`admin-btn-icon${subject.enabled === false ? " muted" : ""}`}
-        title={subject.enabled === false ? "Activer" : "Désactiver"}
+        title={subject.enabled === false ? t("admin.enable") : t("admin.disable")}
         onClick={(e) => {
           e.stopPropagation();
           api.updateSubject(subject.id, { enabled: !(subject.enabled !== false) }).then(onRefresh);
@@ -230,20 +236,21 @@ function SubjectRow({ subject, specId, onRefresh, onSelect, isSelected }) {
 // ── Chapter panel (S1 + S2 with sortable chapters) ──────────────────────────
 
 function ChapterPanel({ subject, specId, onRefresh }) {
+  const { t } = useLanguage();
   const norm = subject.name
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, "_");
 
   return (
     <div className="admin-chapter-panel">
       <h3 className="admin-panel-title">
-        <BookOpen size={16} /> Chapitres — {subject.name}
+        <BookOpen size={16} /> {t("admin.chapters")} — {subject.name}
       </h3>
       <div className="admin-semester-section">
-        <h4 className="admin-semester-title">Semestre 1</h4>
+        <h4 className="admin-semester-title">{t("admin.semester1")}</h4>
         <ChapterList chapters={subject.chapters_s1 || []} semester="s1" specId={specId} subjectNorm={norm} onRefresh={onRefresh} />
       </div>
       <div className="admin-semester-section">
-        <h4 className="admin-semester-title">Semestre 2</h4>
+        <h4 className="admin-semester-title">{t("admin.semester2")}</h4>
         <ChapterList chapters={subject.chapters_s2 || []} semester="s2" specId={specId} subjectNorm={norm} onRefresh={onRefresh} />
       </div>
     </div>
@@ -260,6 +267,7 @@ export default function AdminPage() {
   const [selectedSpecId, setSelectedSpecId] = useState("");
   const [selectedSubject, setSelectedSubject] = useState(null);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const user = JSON.parse(localStorage.getItem("academiaUser") || "{}");
   const isAdmin = user.role === "admin";
@@ -349,10 +357,10 @@ export default function AdminPage() {
         <main className="dashboard-main">
           <div className="admin-access-denied">
             <Shield size={48} />
-            <h2>Accès refusé</h2>
-            <p>Cette page est réservée aux administrateurs.</p>
+            <h2>{t("admin.accessDenied")}</h2>
+            <p>{t("admin.accessDeniedDesc")}</p>
             <button type="button" className="admin-btn-primary" onClick={() => navigate("/dashboard")}>
-              Retour au tableau de bord
+              {t("admin.backToDashboard")}
             </button>
           </div>
         </main>
@@ -371,18 +379,18 @@ export default function AdminPage() {
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <Shield size={20} />
-            <h1 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>Administration du programme</h1>
+            <h1 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>{t("admin.title")}</h1>
           </div>
         </header>
 
         {error && (
           <div className="admin-error">
             <p>{error}</p>
-            <button type="button" onClick={loadTree}>Réessayer</button>
+            <button type="button" onClick={loadTree}>{t("admin.retry")}</button>
           </div>
         )}
 
-        {!tree && !error && <p style={{ textAlign: "center", opacity: 0.6 }}>Chargement…</p>}
+        {!tree && !error && <p style={{ textAlign: "center", opacity: 0.6 }}>{t("admin.loading")}</p>}
 
         {tree && (
           <motion.div
@@ -394,7 +402,7 @@ export default function AdminPage() {
             {/* ── Selector bar ── */}
             <div className="admin-selector-bar">
               <div className="admin-select-group">
-                <label>Niveau scolaire</label>
+                <label>{t("admin.schoolLevel")}</label>
                 <div className="admin-select-wrap">
                   <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}>
                     {levels.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
@@ -404,7 +412,7 @@ export default function AdminPage() {
               </div>
 
               <div className="admin-select-group">
-                <label>Filière / Niveau</label>
+                <label>{t("admin.branchLevel")}</label>
                 <div className="admin-select-wrap">
                   <select value={selectedSpecId} onChange={(e) => setSelectedSpecId(e.target.value)}>
                     {specialties.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -417,7 +425,7 @@ export default function AdminPage() {
             {/* ── Specialty management strip ── */}
             {currentLevel && (
               <div className="admin-spec-strip">
-                <span className="admin-spec-strip-label">Filières de « {currentLevel.label} »</span>
+                <span className="admin-spec-strip-label">{t("admin.branchesOf")} « {currentLevel.label} »</span>
                 <div className="admin-spec-chips">
                   {specialties.map((spec) => (
                     <span key={spec.id} className={`admin-spec-chip${spec.id === selectedSpecId ? " active" : ""}${spec.enabled === false ? " disabled" : ""}`}>
@@ -425,7 +433,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         className={`admin-btn-icon${spec.enabled === false ? " muted" : ""}`}
-                        title={spec.enabled === false ? "Activer" : "Désactiver"}
+                        title={spec.enabled === false ? t("admin.enable") : t("admin.disable")}
                         onClick={() => api.updateSpecialty(spec.id, { enabled: !(spec.enabled !== false) }).then(refresh)}
                       >
                         {spec.enabled === false ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -436,9 +444,9 @@ export default function AdminPage() {
                 </div>
                 <AddForm
                   fields={[
-                    { key: "id", label: "Identifiant (ex: 1bac_sm)" },
-                    { key: "label", label: "Libellé français" },
-                    { key: "label_ar", label: "Libellé arabe (optionnel)" },
+                    { key: "id", label: t("admin.idPlaceholder") },
+                    { key: "label", label: t("admin.frLabel") },
+                    { key: "label_ar", label: t("admin.arLabel") },
                   ]}
                   onAdd={handleAddSpecialty}
                 />
@@ -449,7 +457,7 @@ export default function AdminPage() {
             {currentSpec && (
               <div className="admin-panels">
                 <div className="admin-panel admin-subjects-panel">
-                  <h3 className="admin-panel-title">Matières — {currentSpec.label}</h3>
+                  <h3 className="admin-panel-title">{t("admin.subjects")} — {currentSpec.label}</h3>
                   <div className="admin-subject-list">
                     {subjects.map((subj) => (
                       <SubjectRow
@@ -462,7 +470,7 @@ export default function AdminPage() {
                       />
                     ))}
                   </div>
-                  <AddForm placeholder="Nom de la matière" onAdd={handleAddSubject} />
+                  <AddForm placeholder={t("admin.subjectName")} onAdd={handleAddSubject} />
                 </div>
 
                 <div className="admin-panel admin-chapters-panel-wrap">
@@ -471,7 +479,7 @@ export default function AdminPage() {
                   ) : (
                     <div className="admin-empty-hint">
                       <BookOpen size={32} strokeWidth={1.5} />
-                      <p>Sélectionnez une matière pour gérer ses chapitres</p>
+                      <p>{t("admin.selectSubjectHint")}</p>
                     </div>
                   )}
                 </div>

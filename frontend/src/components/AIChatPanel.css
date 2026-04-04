@@ -694,3 +694,27 @@
     font-size: 16px; /* prevent iOS zoom */
   }
 }
+
+/* ─── RTL overrides ─── */
+[dir="rtl"] .aichat-panel {
+  border-left: none;
+  border-right: 1px solid var(--border);
+}
+[dir="rtl"] .aichat-panel.aichat-full {
+  border-right: 1px solid var(--border);
+}
+[dir="rtl"] .ai-fab {
+  right: auto; left: 24px;
+}
+[dir="rtl"] .ai-fab-label {
+  right: auto; left: 62px;
+}
+@media (max-width: 900px) {
+  [dir="rtl"] .aichat-panel {
+    border-right: none;
+    border-top: 1px solid var(--border);
+  }
+  [dir="rtl"] .ai-fab {
+    right: auto; left: 16px;
+  }
+}

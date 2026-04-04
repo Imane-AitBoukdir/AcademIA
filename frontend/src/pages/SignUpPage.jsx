@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
+import { useLanguage } from "../i18n";
 import { getSpecialtiesForSchoolLevel, lyceeSpecialties } from "../lib/curriculum";
 
 const initialForm = {
@@ -18,6 +19,7 @@ const initialForm = {
 export default function SignUpPage() {
   const [form, setForm] = useState(initialForm);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const [error, setError] = useState("");
 
@@ -37,7 +39,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setError("");
     if (form.password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      setError(t("auth.passwordTooShort"));
       return;
     }
     try {
@@ -52,7 +54,7 @@ export default function SignUpPage() {
         if (Array.isArray(detail)) {
           setError(detail.map((e) => e.msg).join(", "));
         } else {
-          setError(detail || "L'inscription a échoué.");
+          setError(detail || t("auth.signUpFailed"));
         }
         return;
       }
@@ -60,7 +62,7 @@ export default function SignUpPage() {
       localStorage.setItem("academiaUser", JSON.stringify(user));
       navigate("/dashboard");
     } catch {
-      setError("Impossible de joindre le serveur. Veuillez réessayer.");
+      setError(t("auth.serverError"));
     }
   };
 
@@ -74,14 +76,14 @@ export default function SignUpPage() {
         transition={{ duration: 0.4 }}
       >
         <div className="auth-header">
-          <h1>Créez votre compte</h1>
-          <p>Commencez à apprendre avec AcademIA dès aujourd'hui.</p>
+          <h1>{t("auth.createAccount")}</h1>
+          <p>{t("auth.signUpSubtitle")}</p>
           {error && <p style={{ color: "#e53e3e", marginTop: 8 }}>{error}</p>}
         </div>
 
         <div className="form-grid form-two-cols">
           <div className="form-group">
-            <label className="form-label" htmlFor="prenom">Prénom</label>
+            <label className="form-label" htmlFor="prenom">{t("profile.firstName")}</label>
             <input
               id="prenom"
               className="form-input"
@@ -94,7 +96,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="nom">Nom</label>
+            <label className="form-label" htmlFor="nom">{t("profile.lastName")}</label>
             <input
               id="nom"
               className="form-input"
@@ -107,7 +109,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="niveauScolaire">Niveau scolaire</label>
+            <label className="form-label" htmlFor="niveauScolaire">{t("profile.schoolLevel")}</label>
             <select
               id="niveauScolaire"
               className="form-input"
@@ -116,15 +118,15 @@ export default function SignUpPage() {
               value={form.niveauScolaire}
               onChange={onChange}
             >
-              <option value="primaire">Primaire</option>
-              <option value="college">Collège</option>
-              <option value="lycee">Lycée</option>
+              <option value="primaire">{t("auth.primaire")}</option>
+              <option value="college">{t("auth.college")}</option>
+              <option value="lycee">{t("auth.lycee")}</option>
             </select>
           </div>
 
           {form.niveauScolaire === "primaire" && (
             <div className="form-group">
-              <label className="form-label" htmlFor="specialty">Année</label>
+              <label className="form-label" htmlFor="specialty">{t("profile.year")}</label>
               <select
                 id="specialty"
                 className="form-input"
@@ -133,10 +135,10 @@ export default function SignUpPage() {
                 value={form.specialty}
                 onChange={onChange}
               >
-                <option value="">— Sélectionnez votre année —</option>
+                <option value="">{t("profile.selectYear")}</option>
                 {getSpecialtiesForSchoolLevel("primaire").map((s) => (
                   <option key={s.id} value={s.id} disabled={s.enabled === false}>
-                    {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                    {s.label}{s.enabled === false ? ` (${t("profile.comingSoon")})` : ""}
                   </option>
                 ))}
               </select>
@@ -145,7 +147,7 @@ export default function SignUpPage() {
 
           {form.niveauScolaire === "college" && (
             <div className="form-group">
-              <label className="form-label" htmlFor="specialty">Année</label>
+              <label className="form-label" htmlFor="specialty">{t("profile.year")}</label>
               <select
                 id="specialty"
                 className="form-input"
@@ -154,10 +156,10 @@ export default function SignUpPage() {
                 value={form.specialty}
                 onChange={onChange}
               >
-                <option value="">— Sélectionnez votre année —</option>
+                <option value="">{t("profile.selectYear")}</option>
                 {getSpecialtiesForSchoolLevel("college").map((s) => (
                   <option key={s.id} value={s.id} disabled={s.enabled === false}>
-                    {s.label}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                    {s.label}{s.enabled === false ? ` (${t("profile.comingSoon")})` : ""}
                   </option>
                 ))}
               </select>
@@ -166,7 +168,7 @@ export default function SignUpPage() {
 
           {form.niveauScolaire === "lycee" && (
             <div className="form-group">
-              <label className="form-label" htmlFor="specialty">Filière</label>
+              <label className="form-label" htmlFor="specialty">{t("profile.specialty")}</label>
               <select
                 id="specialty"
                 className="form-input"
@@ -175,10 +177,10 @@ export default function SignUpPage() {
                 value={form.specialty}
                 onChange={onChange}
               >
-                <option value="">— Sélectionnez votre filière —</option>
+                <option value="">{t("profile.selectSpecialty")}</option>
                 {lyceeSpecialties.map((s) => (
                   <option key={s.id} value={s.id} disabled={s.enabled === false}>
-                    {s.label} — {s.labelAr}{s.enabled === false ? " (Bientôt disponible)" : ""}
+                    {s.label} — {s.labelAr}{s.enabled === false ? ` (${t("profile.comingSoon")})` : ""}
                   </option>
                 ))}
               </select>
@@ -186,7 +188,7 @@ export default function SignUpPage() {
           )}
 
           <div className="form-group">
-            <label className="form-label" htmlFor="age">Âge</label>
+            <label className="form-label" htmlFor="age">{t("profile.age")}</label>
             <input
               id="age"
               className="form-input"
@@ -202,7 +204,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="tel">Téléphone</label>
+            <label className="form-label" htmlFor="tel">{t("profile.phone")}</label>
             <input
               id="tel"
               className="form-input"
@@ -216,7 +218,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="email">E-mail</label>
+            <label className="form-label" htmlFor="email">{t("profile.email")}</label>
             <input
               id="email"
               className="form-input"
@@ -230,7 +232,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label" htmlFor="password">Mot de passe</label>
+            <label className="form-label" htmlFor="password">{t("auth.password")}</label>
             <input
               id="password"
               className="form-input"
@@ -239,17 +241,17 @@ export default function SignUpPage() {
               name="password"
               value={form.password}
               onChange={onChange}
-              placeholder="Choisissez un mot de passe"
+              placeholder={t("auth.choosePassword")}
             />
           </div>
         </div>
 
         <button className="btn btn-primary auth-submit" style={{ width: "100%" }} type="submit">
-          Créer un Compte
+          {t("auth.signUpBtn")}
         </button>
 
         <p className="auth-footer">
-          Déjà un compte ? <Link to="/signin">Se connecter</Link>
+          {t("auth.hasAccount")} <Link to="/signin">{t("auth.signInLink")}</Link>
         </p>
       </motion.form>
     </div>

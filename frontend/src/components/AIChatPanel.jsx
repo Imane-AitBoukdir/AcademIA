@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import { API_URL } from "../config";
+import { useLanguage } from "../i18n";
 import "./AIChatPanel.css";
 
 const SpeechRecognition =
@@ -63,6 +64,7 @@ export default function AIChatPanel({
   fullWidth = false,
   chapterKey = "",
 }) {
+  const { t } = useLanguage();
   /* ── localStorage helpers ── */
   const storageKey = chapterKey ? `chat_${chapterKey}` : null;
 
@@ -454,7 +456,7 @@ export default function AIChatPanel({
         ...prev,
         {
           role: "ai",
-          text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+          text: t("chat.errorMsg"),
           isNew: true,
         },
       ]);
@@ -462,10 +464,10 @@ export default function AIChatPanel({
   };
 
   const modeLabels = {
-    course: "Course Tutor",
-    exercise: "Exercise Corrector",
-    mock_exam: "Exam Generator",
-    general: "Prof IA",
+    course: t("chat.courseTutor"),
+    exercise: t("chat.exerciseCorrector"),
+    mock_exam: t("chat.examGenerator"),
+    general: t("chat.profAi"),
   };
 
   return (
@@ -478,7 +480,7 @@ export default function AIChatPanel({
       {/* Drag overlay */}
       {isDragging && (
         <div className="aichat-drag-overlay">
-          <p>Drop your file here</p>
+          <p>{t("chat.dropFile")}</p>
         </div>
       )}
 
@@ -491,7 +493,7 @@ export default function AIChatPanel({
           />
           <span className="aichat-title">
             <Bot size={16} />
-            {modeLabels[mode] || "AI Assistant"}
+            {modeLabels[mode] || t("chat.aiAssistant")}
           </span>
           {storageKey && (
             <div className="aichat-sessions-wrap">
@@ -505,7 +507,7 @@ export default function AIChatPanel({
               {sessionsOpen && (
                 <div className="aichat-sessions-dropdown">
                   <button className="aichat-new-chat-btn" onClick={startNewChat}>
-                    <Plus size={14} /> New Chat
+                    <Plus size={14} /> {t("chat.newChat")}
                   </button>
                   {conversations.slice().reverse().map((c) => (
                     <div
@@ -524,7 +526,7 @@ export default function AIChatPanel({
                     </div>
                   ))}
                   {conversations.length === 0 && (
-                    <p className="aichat-sessions-empty">No saved chats</p>
+                    <p className="aichat-sessions-empty">{t("chat.noChats")}</p>
                   )}
                 </div>
               )}
@@ -535,7 +537,7 @@ export default function AIChatPanel({
           <button
             className={`aichat-voice-toggle ${isVoiceEnabled ? "active" : ""}`}
             onClick={() => setIsVoiceEnabled((v) => !v)}
-            title={isVoiceEnabled ? "Disable voice" : "Enable voice"}
+            title={isVoiceEnabled ? t("chat.disableVoice") : t("chat.enableVoice")}
           >
             {isVoiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
@@ -553,20 +555,16 @@ export default function AIChatPanel({
           <div className="aichat-empty">
             <Bot size={32} className="aichat-empty-icon" />
             <h3>
-              {mode === "course" && "Pose-moi toutes tes questions sur ce cours"}
-              {mode === "exercise" && "Envoie ton travail — je te guide pas à pas"}
-              {mode === "mock_exam" && "Je génère des examens blancs pour toi"}
-              {mode === "general" && "Qu'est-ce que tu voudrais apprendre aujourd'hui ?"}
+              {mode === "course" && t("chat.emptyHeadingCourse")}
+              {mode === "exercise" && t("chat.emptyHeadingExercise")}
+              {mode === "mock_exam" && t("chat.emptyHeadingExam")}
+              {mode === "general" && t("chat.emptyHeadingGeneral")}
             </h3>
             <p>
-              {mode === "course" &&
-                "J'ai accès à ton cours en PDF. Pose des questions, demande des explications ou explore de nouveaux concepts."}
-              {mode === "exercise" &&
-                "Partage tes réponses et je les corrige, note ton travail et te guide étape par étape."}
-              {mode === "mock_exam" &&
-                "Dis-moi quels chapitres couvrir et je crée des questions d'examen réalistes avec un barème."}
-              {mode === "general" &&
-                "Je peux t'aider dans toutes les matières. Envoie tes devoirs, pose des questions ou explore de nouveaux sujets."}
+              {mode === "course" && t("chat.emptyDescCourse")}
+              {mode === "exercise" && t("chat.emptyDescExercise")}
+              {mode === "mock_exam" && t("chat.emptyDescExam")}
+              {mode === "general" && t("chat.emptyDescGeneral")}
             </p>
           </div>
         )}
@@ -653,8 +651,8 @@ export default function AIChatPanel({
             }}
             placeholder={
               mode === "exercise"
-                ? "Type your answer or ask a question..."
-                : "Ask a question..."
+                ? t("chat.inputPlaceholderExercise")
+                : t("chat.inputPlaceholder")
             }
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSendMessage(inputText);
@@ -675,8 +673,8 @@ export default function AIChatPanel({
       {showTranscriptConfirm && (
         <div className="aichat-confirm-overlay">
           <div className="aichat-confirm-modal">
-            <h3>Confirm voice message</h3>
-            <p>Review the transcribed text before sending.</p>
+            <h3>{t("chat.voiceConfirm")}</h3>
+            <p>{t("chat.voiceReview")}</p>
             <textarea
               value={confirmedTranscript}
               onChange={(e) => {
@@ -688,10 +686,10 @@ export default function AIChatPanel({
             />
             <div className="aichat-confirm-actions">
               <button className="ghost" onClick={handleCancelTranscript}>
-                Cancel
+                {t("chat.cancel")}
               </button>
               <button className="primary" onClick={handleConfirmTranscriptSend}>
-                Send
+                {t("chat.send")}
               </button>
             </div>
           </div>

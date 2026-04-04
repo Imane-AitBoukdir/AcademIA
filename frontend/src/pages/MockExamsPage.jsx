@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import {
     deletePdf,
     fetchChapterPdfs,
@@ -20,6 +21,7 @@ import {
 export default function MockExamsPage() {
   const params = useParams();
   const location = useLocation();
+  const { t } = useLanguage();
 
   const isAdmin = (() => {
     try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").role === "admin"; } catch { return false; }
@@ -134,7 +136,7 @@ export default function MockExamsPage() {
   };
 
   const handleDelete = async (fileId) => {
-    if (!window.confirm("Supprimer cet examen ?")) return;
+    if (!window.confirm(t("common.deleteExam"))) return;
     await deletePdf(fileId);
     refreshExamPdfs();
   };
@@ -186,7 +188,7 @@ export default function MockExamsPage() {
       setSelectedChapters([]);
     } catch (err) {
       console.error("Exam generation failed:", err);
-      alert(err.message || "La génération a échoué.");
+      alert(err.message || t("exam.genFailed"));
     } finally {
       setGenerating(false);
     }
@@ -225,9 +227,9 @@ export default function MockExamsPage() {
             {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <div className="course-breadcrumb">
-            <Link to="/dashboard">Tableau de Bord</Link>
+            <Link to="/dashboard">{t("course.dashboard")}</Link>
             <ChevronRight size={14} />
-            <Link to="/pick/mock-exams">Examens Blancs</Link>
+            <Link to="/pick/mock-exams">{t("exam.mockExamsTitle")}</Link>
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
           </div>
@@ -242,10 +244,10 @@ export default function MockExamsPage() {
           <aside className="chapter-sidebar">
             {!generateMode ? (
               <>
-                <h2>Examens</h2>
+                <h2>{t("exam.exams")}</h2>
                 <div className="chapter-list">
                   {examPdfs.length === 0 && (
-                    <p className="exam-empty-hint">Aucun examen importé pour cette matière.</p>
+                    <p className="exam-empty-hint">{t("exam.noExamHint")}</p>
                   )}
                   {examPdfs.map((pdf, i) => (
                     <button
@@ -270,29 +272,29 @@ export default function MockExamsPage() {
                 </div>
                 <div className="exam-sidebar-actions">
                   <button className="pdf-upload-btn" type="button" onClick={() => fileInputRef.current?.click()}>
-                    <Upload size={14} /> Importer un examen
+                    <Upload size={14} /> {t("exam.uploadExam")}
                   </button>
                   <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleUpload} />
                   <button className="btn-primary" type="button" onClick={() => setGenerateMode(true)} style={{ marginTop: "0.5rem", width: "100%" }}>
-                    <ScrollText size={14} /> Générer un Examen
+                    <ScrollText size={14} /> {t("exam.generateBtn")}
                   </button>
                 </div>
               </>
             ) : (
               <>
                 <div className="exam-sidebar-header">
-                  <h2>Sélectionner les chapitres</h2>
+                  <h2>{t("exam.selectChapters")}</h2>
                   <button className="exam-sidebar-close" type="button" onClick={cancelGeneration} title="Cancel">
                     <X size={16} />
                   </button>
                 </div>
                 <button className="exam-select-all-btn" type="button" onClick={toggleAll}>
-                  {selectedChapters.length === allChapters.length ? "Tout désélectionner" : "Tout sélectionner"}
+                  {selectedChapters.length === allChapters.length ? t("exam.deselectAll") : t("exam.selectAll")}
                 </button>
                 <div className="chapter-list">
                   {groupedChapters.s1?.length > 0 && (
                     <>
-                      <p className="semester-label">Semestre 1</p>
+                      <p className="semester-label">{t("exam.semester1")}</p>
                       {groupedChapters.s1.map((ch) => {
                         const checked = selectedChapters.some((s) => s.name === ch.name && s.semester === "s1");
                         return (
@@ -313,8 +315,8 @@ export default function MockExamsPage() {
                   )}
                   {groupedChapters.s2?.length > 0 && (
                     <>
-                      <p className="semester-label" style={{ marginTop: groupedChapters.s1?.length > 0 ? "0.75rem" : 0 }}>
-                        Semestre 2
+                        <p className="semester-label" style={{ marginTop: groupedChapters.s1?.length > 0 ? "0.75rem" : 0 }}>
+                        {t("exam.semester2")}
                       </p>
                       {groupedChapters.s2.map((ch) => {
                         const checked = selectedChapters.some((s) => s.name === ch.name && s.semester === "s2");
@@ -343,8 +345,8 @@ export default function MockExamsPage() {
                     onClick={startGeneration}
                   >
                     {generating
-                      ? <><Loader2 size={14} className="spin" /> Génération en cours…</>
-                      : <>Générer ({selectedChapters.length} chapitre{selectedChapters.length !== 1 ? "s" : ""})</>}
+                      ? <><Loader2 size={14} className="spin" /> {t("exam.generating")}</>
+                      : <>{t("exam.generateCount")} ({selectedChapters.length} {selectedChapters.length !== 1 ? t("exam.chapters") : t("exam.chapter")})</>}
                   </button>
                 </div>
               </>
@@ -376,10 +378,10 @@ export default function MockExamsPage() {
                 ) : (
                   <div className="pdf-fallback">
                     <ScrollText size={32} />
-                    <h3>Examens Blancs — {formatSubjectName(rawSubject)}</h3>
-                    <p>Aucun examen importé pour cette matière.</p>
+                    <h3>{t("exam.mockExamsTitle")} — {formatSubjectName(rawSubject)}</h3>
+                    <p>{t("exam.noExamHint")}</p>
                     <p style={{ marginTop: "0.5rem", color: "var(--text-muted)" }}>
-                      Importez un examen ou générez-en un avec l'IA.
+                      {t("exam.fallbackHint")}
                     </p>
                   </div>
                 )}
@@ -412,7 +414,7 @@ export default function MockExamsPage() {
             type="button"
           >
             <Bot size={22} />
-            <span className="ai-fab-label">Prof IA</span>
+            <span className="ai-fab-label">{t("sidebar.profAi")}</span>
           </button>
         )}
       </main>

@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import AIChatPanel from "../components/AIChatPanel";
 import EditableChapterSidebar from "../components/EditableChapterSidebar";
 import Sidebar from "../components/Sidebar";
+import { useLanguage } from "../i18n";
 import {
     deletePdf,
     fetchChapterPdfs,
@@ -22,6 +23,7 @@ export default function CoursePage() {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const isAdmin = (() => {
     try { return JSON.parse(localStorage.getItem("academiaUser") || "{}").role === "admin"; } catch { return false; }
@@ -138,7 +140,7 @@ export default function CoursePage() {
   };
 
   const handleDelete = async (fileId) => {
-    if (!window.confirm("Supprimer ce PDF ?")) return;
+    if (!window.confirm(t("common.deletePdf"))) return;
     await deletePdf(fileId);
     refreshPdfs();
   };
@@ -183,7 +185,7 @@ export default function CoursePage() {
             {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <div className="course-breadcrumb">
-            <Link to="/dashboard">Tableau de Bord</Link>
+            <Link to="/dashboard">{t("course.dashboard")}</Link>
             <ChevronRight size={14} />
             <span>{formatSubjectName(rawSubject)}</span>
             <ChevronRight size={14} />
@@ -237,7 +239,7 @@ export default function CoursePage() {
                 })
               }
             >
-              Passez aux exercices <ArrowRight size={16} />
+              {t("course.goToExercises")} <ArrowRight size={16} />
             </button>
           </EditableChapterSidebar>
 
@@ -273,7 +275,7 @@ export default function CoursePage() {
                           title={pdf.filename}
                         >
                           <FileText size={13} />
-                          Partie {i + 1}
+                          {t("course.part")} {i + 1}
                           {canDelete(pdf) && (
                             <span
                               className="pdf-tab-x"
@@ -288,7 +290,7 @@ export default function CoursePage() {
                     </div>
                   )}
                   <button className="pdf-upload-btn" type="button" onClick={() => fileInputRef.current?.click()}>
-                    <Upload size={14} /> Importer un PDF
+                    <Upload size={14} /> {t("course.importPdf")}
                   </button>
                   <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleUpload} />
                 </div>
@@ -302,7 +304,7 @@ export default function CoursePage() {
                   <div className="pdf-fallback">
                     <FileText size={32} />
                     <h3>{selectedChapter.name}</h3>
-                    <p>Aucun PDF importé pour ce chapitre.</p>
+                    <p>{t("course.noPdf")}</p>
                   </div>
                 )}
               </div>
@@ -333,7 +335,7 @@ export default function CoursePage() {
             type="button"
           >
             <Sparkles size={22} />
-            <span className="ai-fab-label">Expliquer avec l'IA</span>
+            <span className="ai-fab-label">{t("course.explainWithAi")}</span>
           </button>
         )}
       </main>

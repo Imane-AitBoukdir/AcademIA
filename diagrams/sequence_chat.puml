@@ -1,0 +1,90 @@
+@startuml Sequence_Chat
+' ──────────────────────────────────────────
+'  Compile: https://www.plantuml.com/plantuml/uml
+'  Paste this code → click Submit → download PNG
+' ──────────────────────────────────────────
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #6C47B8
+skinparam sequenceParticipantBackgroundColor #EDE7F6
+skinparam sequenceLifeLineBorderColor #6C47B8
+skinparam sequenceDividerBackgroundColor #F5F2F7
+skinparam noteBorderColor #E8722A
+skinparam noteBackgroundColor #FFF3E0
+
+actor "Élève" as Eleve
+participant "React\nAIChatPanel" as UI
+participant "FastAPI\nPOST /api/chat" as API
+participant "SessionManager" as SM
+participant "FileCache" as FC
+participant "PromptBuilder" as PB
+participant "GeminiService" as GS
+participant "TTSService" as TTS
+database "MongoDB\nAtlas" as DB
+database "Gemini\nFile API" as GAPI
+
+Eleve -> UI : Saisit un message
+UI -> API : POST /api/chat\n(message, mode, level, subject,\nchapter, session_id, reference_pdf_id)
+
+== 1. Restauration de la session ==
+API -> SM : get_or_create(session_id)
+SM -> DB : find_one({session_id})
+SM --> API : Session (historique + fichiers)
+
+== 2. Attachement du PDF de référence ==
+API -> FC : get_or_upload(reference_pdf_id)
+FC -> DB : find_one(gemini_file_cache)
+alt Cache valide
+  FC --> API : gemini_uri (depuis le cache)
+else Cache expiré
+  FC -> DB : GridFS open_download_stream
+  FC -> GAPI : upload(pdf_bytes)
+  GAPI --> FC : file_uri
+  FC -> DB : upsert gemini_file_cache (TTL=47h)
+  FC --> API : gemini_uri
+end
+
+== 3. Vérification des fichiers ==
+API -> GS : verify_file_alive(file_uri)
+GS -> GAPI : files.get(name)
+GS --> API : true/false
+
+== 4. Résumé des anciens tours ==
+API -> PB : summarize_old_turns(old_history)
+PB -> GS : generate(gemini-2.0-flash)
+GS --> PB : résumé en texte libre
+PB --> API : summary
+
+== 5. Construction du prompt ==
+API -> PB : build_system_prompt(mode, level,\nsubject, chapter, summary, files)
+PB --> API : system_prompt
+API -> PB : build_contents(session, message)
+PB --> API : contents[] (fichiers + historique + message)
+
+== 6. Génération de la réponse ==
+API -> GS : generate(system_prompt, contents)
+GS -> GAPI : models.generate_content\n(gemini-2.5-flash)
+GAPI --> GS : raw JSON text
+GS -> GS : _parse_response()\n{display_text, spoken_text}
+GS -> GS : _needs_display_repair()?
+opt LaTeX cassé détecté
+  GS -> GAPI : repair prompt\n(gemini-2.0-flash)
+  GAPI --> GS : display_text corrigé
+end
+GS --> API : (display_text, spoken_text)
+
+== 7. Synthèse vocale (optionnel) ==
+opt voice = true
+  API -> TTS : synthesize(spoken_text)
+  TTS --> API : audio base64 (MP3)
+end
+
+== 8. Sauvegarde ==
+API -> SM : save(session)
+SM -> DB : replace_one(session)
+
+API --> UI : ChatResponse\n{text, audio, session_id}
+UI -> UI : Rendu Markdown + KaTeX\n+ effet machine à écrire
+UI --> Eleve : Réponse affichée + audio
+
+@enduml
