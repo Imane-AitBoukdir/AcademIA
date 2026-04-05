@@ -16,6 +16,7 @@ import {
     getSpecialtiesForSchoolLevel,
     getSpecialtyById,
     normalizeValue,
+    reloadCurriculum,
     uploadPdf,
 } from "../lib/curriculum";
 
@@ -39,6 +40,13 @@ export default function CoursePage() {
   );
 
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Reload curriculum on mount so users always see the latest chapter order
+  useEffect(() => {
+    reloadCurriculum().then(() => setRefreshKey((k) => k + 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const groupedChapters = useMemo(
     () => getChaptersForSubject(specialty, rawSubject),
     // eslint-disable-next-line react-hooks/exhaustive-deps
