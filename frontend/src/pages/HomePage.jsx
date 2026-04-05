@@ -12,6 +12,12 @@ const fadeUp = {
 export default function HomePage() {
   const { t } = useLanguage();
 
+  const heroCards = [
+    { className: "hero-card hero-card-purple", icon: <BookOpen size={20} />, title: t("home.feat1Title"), desc: t("home.feat1Desc") },
+    { className: "hero-card hero-card-gold", icon: <PenTool size={20} />, title: t("home.feat2Title"), desc: t("home.feat2Desc") },
+    { className: "hero-card hero-card-mint", icon: <ChevronRight size={20} />, title: t("home.feat3Title"), desc: t("home.feat3Desc") },
+  ];
+
   const features = [
     { title: t("home.feat1Title"), desc: t("home.feat1Desc"), accent: "mint", icon: <BookOpen size={20} /> },
     { title: t("home.feat2Title"), desc: t("home.feat2Desc"), accent: "peach", icon: <PenTool size={20} /> },
