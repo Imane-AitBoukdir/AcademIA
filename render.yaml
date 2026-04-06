@@ -3,8 +3,7 @@ services:
     name: academia-api
     runtime: docker
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: GEMINI_API_KEY
         sync: false
@@ -22,5 +21,3 @@ services:
         value: pNInz6obpgDQGcFmaJgB
       - key: ALLOWED_ORIGINS
         sync: false
-      - key: PYTHON_VERSION
-        value: "3.11.11"
