@@ -39,8 +39,10 @@ export default function HomePage() {
             <motion.div className="hero-copy" {...fadeUp}>
               <p className="hero-kicker">Maroc • Élèves • Apprendre avec plaisir</p>
               <h1>
-                {t("home.heroTitle1")}{" "}
-                <span className="hero-accent hero-accent-purple">{t("home.heroTitle2")}</span>
+                {t("home.heroTitle1")}<span className="hero-accent hero-accent-blue">{t("home.heroTitle2")}</span>
+                {" "}<span className="hero-accent hero-accent-purple">{t("home.heroTitle3")}</span>
+                {" "}{t("home.heroTitle4")}{" "}
+                <span className="hero-accent hero-accent-orange">{t("home.heroTitle5")}</span>
               </h1>
               <p className="hero-sub">
                 {t("home.heroSubtitle")}
